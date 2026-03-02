@@ -1,0 +1,48 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}{% if role %}Edit Role{% else %}New Role{% endif %} — PostgreManager{% endblock %}
+{% block page_title %}{% if role %}Edit Role: {{ role.name }}{% else %}New Role{% endif %}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="/pg-users?server_id={{ server_id }}">PG Users</a></li><li class="breadcrumb-item active">{% if role %}Edit{% else %}New{% endif %}</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460; max-width:560px;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-user-cog mr-2"></i>Role Details</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ role ? '/pg-users/' ~ role.name : '/pg-users' }}">
+            <input type="hidden" name="server_id" value="{{ server_id }}">
+
+            {% if not role %}
+            <div class="form-group">
+                <label style="color:#ddd;">Role Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="form-control pm-input" required>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label style="color:#ddd;">Password {% if role %}<small style="color:#aaa;">(leave blank to keep)</small>{% endif %}</label>
+                <input type="password" name="password" class="form-control pm-input">
+            </div>
+
+            <div class="row">
+                {% for attr, label in { login: 'Can Login', superuser: 'Superuser', createdb: 'Create DB', createrole: 'Create Role', replication: 'Replication' } %}
+                <div class="col-md-6">
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox" class="custom-control-input" id="{{ attr }}" name="{{ attr }}"
+                               {% if role and role['rol' ~ attr] ?? false %}checked{% endif %}>
+                        <label class="custom-control-label" for="{{ attr }}" style="color:#ddd;">{{ label }}</label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary mr-2" style="background:#e94560; border-color:#e94560;">
+                    <i class="fas fa-save mr-1"></i>Save
+                </button>
+                <a href="/pg-users?server_id={{ server_id }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

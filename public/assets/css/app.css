@@ -1,0 +1,78 @@
+/* PostgreManager — Custom CSS */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --pm-dark:    #1a1a2e;
+    --pm-mid:     #16213e;
+    --pm-deep:    #0f3460;
+    --pm-accent:  #e94560;
+    --pm-info:    #17a2b8;
+    --pm-text:    #ddd;
+    --pm-muted:   #aaa;
+}
+
+body, .main-header, .main-sidebar, .content-wrapper, .main-footer {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Input style */
+.pm-input {
+    background: rgba(255,255,255,0.07) !important;
+    border-color: var(--pm-deep) !important;
+    color: var(--pm-text) !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.pm-input:focus {
+    border-color: var(--pm-accent) !important;
+    box-shadow: 0 0 0 0.15rem rgba(233,69,96,0.25) !important;
+    background: rgba(255,255,255,0.1) !important;
+    color: #fff !important;
+}
+.pm-input option {
+    background: var(--pm-mid);
+    color: var(--pm-text);
+}
+.pm-input::placeholder { color: #555; }
+
+/* Card base */
+.card { border-radius: 8px !important; }
+.card-header { border-radius: 8px 8px 0 0 !important; }
+
+/* Table */
+.table td, .table th { vertical-align: middle !important; border-color: #0f3460 !important; }
+
+/* Badge xs button */
+.btn-xs {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.72rem;
+    border-radius: 4px;
+}
+
+/* Sidebar active link */
+.nav-sidebar .nav-link.active {
+    background-color: var(--pm-accent) !important;
+    color: #fff !important;
+}
+.nav-sidebar .nav-link:hover {
+    background-color: rgba(233,69,96,0.15) !important;
+    color: #fff !important;
+}
+
+/* Content wrapper */
+.content-wrapper { background: #111827; }
+
+/* Flash dismiss */
+.alert { border-radius: 6px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--pm-dark); }
+::-webkit-scrollbar-thumb { background: var(--pm-deep); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--pm-accent); }
+
+/* History item hover */
+.history-item:hover { background: rgba(255,255,255,0.05); }
+
+/* Transition */
+.btn, .nav-link, .card { transition: all 0.2s ease; }

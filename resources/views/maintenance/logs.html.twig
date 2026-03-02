@@ -1,0 +1,33 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Activity Log — PostgreManager{% endblock %}
+{% block page_title %}Activity Log{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="/maintenance?server_id={{ server_id }}">Maintenance</a></li><li class="breadcrumb-item active">Logs</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-list-alt mr-2"></i>Recent Activity (pg_stat_activity)</h3>
+    </div>
+    <div class="card-body p-0" style="max-height: 600px; overflow-y:auto;">
+        <table class="table table-sm table-hover mb-0" style="color:#ddd; font-size:0.82rem;">
+            <thead style="background:#0f3460; position:sticky; top:0;">
+                <tr><th>PID</th><th>User</th><th>App</th><th>State</th><th>Started</th><th>Query</th></tr>
+            </thead>
+            <tbody>
+            {% for r in activity %}
+            <tr>
+                <td>{{ r.pid }}</td>
+                <td>{{ r.usename }}</td>
+                <td>{{ r.application_name }}</td>
+                <td><span class="badge badge-{{ r.state == 'active' ? 'success' : 'secondary' }}">{{ r.state }}</span></td>
+                <td style="white-space:nowrap;">{{ r.query_start|date('H:i:s') }}</td>
+                <td><code style="color:#aaa; font-size:0.72rem;">{{ r.query }}</code></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center p-4" style="color:#555;">No activity</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

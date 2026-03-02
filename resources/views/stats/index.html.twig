@@ -1,0 +1,131 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Statistics — PostgreManager{% endblock %}
+{% block page_title %}Statistics & Monitoring{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Statistics</li>{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Cache Hit -->
+    <div class="col-md-3">
+        <div class="card text-center" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-body">
+                <h5 style="color:#aaa;">Cache Hit Ratio</h5>
+                <div class="display-4 font-weight-bold" style="color:{% if cache_hit >= 90 %}#28a745{% elseif cache_hit >= 70 %}#ffc107{% else %}#e94560{% endif %};">
+                    {{ cache_hit }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Active Queries count -->
+    <div class="col-md-3">
+        <div class="card text-center" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-body">
+                <h5 style="color:#aaa;">Active Queries</h5>
+                <div class="display-4 font-weight-bold" style="color:#17a2b8;">{{ active_queries|length }}</div>
+            </div>
+        </div>
+    </div>
+    <!-- Locks -->
+    <div class="col-md-3">
+        <div class="card text-center" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-body">
+                <h5 style="color:#aaa;">Blocked Locks</h5>
+                <div class="display-4 font-weight-bold" style="color:#ffc107;">{{ locks|length }}</div>
+            </div>
+        </div>
+    </div>
+    <!-- Top Table -->
+    <div class="col-md-3">
+        <div class="card text-center" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-body">
+                <h5 style="color:#aaa;">Largest Table</h5>
+                <div class="font-weight-bold mt-2" style="color:#e94560;">{{ table_sizes[0].table ?? '—' }}</div>
+                <small style="color:#aaa;">{{ table_sizes[0].total_size ?? '' }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <!-- Table Sizes -->
+    <div class="col-md-6">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title" style="color:#e94560;"><i class="fas fa-table mr-2"></i>Table Sizes</h3>
+            </div>
+            <div class="card-body p-0" style="max-height:350px; overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0" style="color:#ddd;">
+                    <thead style="background:#0f3460; position:sticky; top:0;">
+                        <tr><th>Table</th><th>Size</th><th>Rows</th><th>Dead Rows</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for t in table_sizes %}
+                    <tr>
+                        <td>{{ t.table }}</td>
+                        <td><span class="badge badge-secondary">{{ t.total_size }}</span></td>
+                        <td>{{ t.rows|number_format }}</td>
+                        <td>{{ t.dead_rows > 0 ? '<span class="text-warning">' ~ t.dead_rows ~ '</span>'|raw : '0' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Queries -->
+    <div class="col-md-6">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title" style="color:#e94560;"><i class="fas fa-terminal mr-2"></i>Active Queries</h3>
+            </div>
+            <div class="card-body p-0" style="max-height:350px; overflow-y:auto;">
+                {% if active_queries %}
+                <table class="table table-sm table-hover mb-0" style="color:#ddd;">
+                    <thead style="background:#0f3460; position:sticky; top:0;"><tr><th>PID</th><th>User</th><th>Duration</th><th>Query</th></tr></thead>
+                    <tbody>
+                    {% for q in active_queries %}
+                    <tr>
+                        <td>{{ q.pid }}</td>
+                        <td>{{ q.usename }}</td>
+                        <td>{{ q.duration_s }}s</td>
+                        <td><code style="font-size:0.7rem; color:#aaa;">{{ q.query|slice(0,60) }}</code></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center p-4" style="color:#555;">No active queries</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Index Usage -->
+<div class="card mt-3" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-search mr-2"></i>Index Usage</h3>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;"><tr><th>Table</th><th>Index</th><th>Scans</th><th>Tuples Read</th><th>Tuples Fetched</th></tr></thead>
+            <tbody>
+            {% for i in index_usage %}
+            <tr>
+                <td>{{ i.table }}</td>
+                <td>{{ i.index }}</td>
+                <td>{{ i.idx_scan|number_format }}</td>
+                <td>{{ i.idx_tup_read|number_format }}</td>
+                <td>{{ i.idx_tup_fetch|number_format }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

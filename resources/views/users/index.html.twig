@@ -1,0 +1,44 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}App Users — PostgreManager{% endblock %}
+{% block page_title %}App Users{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">App Users</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-users mr-2"></i>PostgreManager Users</h3>
+        <a href="/app-users/create" class="btn btn-sm btn-primary" style="background:#e94560; border-color:#e94560;">
+            <i class="fas fa-plus mr-1"></i>New User
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;"><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for u in users %}
+            <tr>
+                <td><i class="fas fa-user mr-1" style="color:#e94560;"></i>{{ u.name }}</td>
+                <td>{{ u.email }}</td>
+                <td>
+                    <span class="badge badge-{% if u.role == 'super_admin' %}danger{% elseif u.role == 'admin' %}warning{% else %}secondary{% endif %}">
+                        {{ u.role }}
+                    </span>
+                </td>
+                <td>{{ u.is_active ? '<span class="badge badge-success">Active</span>'|raw : '<span class="badge badge-secondary">Inactive</span>'|raw }}</td>
+                <td>{{ u.created_at|date('Y-m-d') }}</td>
+                <td>
+                    <a href="/app-users/{{ u.id }}/edit" class="btn btn-xs btn-outline-warning"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="/app-users/{{ u.id }}/delete" style="display:inline;"
+                          onsubmit="return confirm('Delete user {{ u.name }}?')">
+                        <button class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center p-4" style="color:#555;">No users found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

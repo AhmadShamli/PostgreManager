@@ -1,0 +1,37 @@
+services:
+
+  app:
+    image: php:8.4-fpm
+    container_name: pm_app
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
+    networks:
+      - pm_net
+    command: >
+      sh -c "
+        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev -q &&
+        docker-php-ext-install pdo pdo_pgsql pdo_sqlite &&
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
+        composer install --no-dev --optimize-autoloader &&
+        php-fpm
+      "
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: pm_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - pm_net
+
+networks:
+  pm_net:
+    driver: bridge

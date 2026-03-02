@@ -1,0 +1,146 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Query Editor — PostgreManager{% endblock %}
+{% block page_title %}Query Editor{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Query Editor</li>{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style>
+.CodeMirror { height: 220px; font-size: 14px; border-radius: 6px; }
+#result-table { font-size: 0.82rem; }
+#result-table th { background: #0f3460; color: #ddd; position: sticky; top:0; z-index:1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-9">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header d-flex justify-content-between" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-terminal mr-2"></i>SQL Editor</h3>
+                <div>
+                    <select id="db-select" class="form-control form-control-sm d-inline-block" style="width:auto; background:#0f3460; color:#ddd; border-color:#0f3460;">
+                        <option value="">— Select DB —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <textarea id="sql-editor"></textarea>
+                <div class="mt-2 d-flex align-items-center">
+                    <button id="run-btn" class="btn btn-sm btn-primary mr-2" style="background:#e94560; border-color:#e94560;">
+                        <i class="fas fa-play mr-1"></i>Run (Ctrl+Enter)
+                    </button>
+                    <button id="save-btn" class="btn btn-sm btn-outline-info mr-2">
+                        <i class="fas fa-bookmark mr-1"></i>Save Query
+                    </button>
+                    <span id="exec-info" style="color:#aaa; font-size:0.8rem;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="card mt-3" id="result-card" style="background:#1a1a2e; border:1px solid #0f3460; display:none;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title mb-0" style="color:#e94560;">Results <span id="row-count" class="badge badge-secondary ml-2"></span></h3>
+            </div>
+            <div class="card-body p-0" style="max-height:400px; overflow:auto;">
+                <table class="table table-sm table-hover mb-0" id="result-table" style="color:#ddd;"></table>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div id="error-box" class="alert alert-danger mt-3" style="display:none;"></div>
+    </div>
+
+    <!-- History -->
+    <div class="col-md-3">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title mb-0" style="color:#e94560; font-size:0.9rem;"><i class="fas fa-history mr-1"></i>History</h3>
+            </div>
+            <div class="card-body p-0" style="max-height:500px; overflow-y:auto;">
+                {% for h in history %}
+                <div class="p-2 border-bottom history-item" style="border-color:#0f3460!important; cursor:pointer;" data-sql="{{ h.sql|e('html_attr') }}">
+                    <code style="color:#aaa; font-size:0.72rem;">{{ h.sql|slice(0,60) }}{% if h.sql|length > 60 %}…{% endif %}</code>
+                    <br><small style="color:#555;">{{ h.run_at }}</small>
+                </div>
+                {% else %}
+                <div class="p-3 text-center" style="color:#555;font-size:0.8rem;">No history yet</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<script>
+const editor = CodeMirror.fromTextArea(document.getElementById('sql-editor'), {
+    mode: 'text/x-sql', theme: 'dracula', lineNumbers: true, extraKeys: {
+        'Ctrl-Enter': runQuery, 'Cmd-Enter': runQuery
+    }
+});
+
+function runQuery() {
+    const sql = editor.getValue().trim();
+    const db  = document.getElementById('db-select').value;
+    if (!sql) return;
+
+    document.getElementById('run-btn').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Running...';
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('result-card').style.display = 'none';
+
+    fetch('/query/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ sql, db, server_id: '{{ server_id }}' })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.error) {
+            document.getElementById('error-box').textContent = d.error;
+            document.getElementById('error-box').style.display = 'block';
+        } else {
+            renderResults(d);
+        }
+        document.getElementById('exec-info').textContent = d.execution_ms ? `${d.execution_ms}ms` : '';
+    })
+    .finally(() => { document.getElementById('run-btn').innerHTML = '<i class="fas fa-play mr-1"></i>Run (Ctrl+Enter)'; });
+}
+
+function renderResults(d) {
+    const card = document.getElementById('result-card');
+    const tbl  = document.getElementById('result-table');
+    document.getElementById('row-count').textContent = d.row_count + ' rows';
+    tbl.innerHTML = '';
+
+    if (!d.columns.length) { card.style.display = 'block'; return; }
+
+    const thead = '<thead><tr>' + d.columns.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+    const rows  = d.rows.map(r => '<tr>' + d.columns.map(c => `<td>${r[c] ?? ''}</td>`).join('') + '</tr>').join('');
+    tbl.innerHTML = thead + '<tbody>' + rows + '</tbody>';
+    card.style.display = 'block';
+}
+
+document.getElementById('run-btn').addEventListener('click', runQuery);
+
+document.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', () => editor.setValue(el.dataset.sql));
+});
+
+document.getElementById('save-btn').addEventListener('click', () => {
+    const name = prompt('Save query as:');
+    if (!name) return;
+    fetch('/query/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ name, sql: editor.getValue() })
+    }).then(() => alert('Saved!'));
+});
+</script>
+{% endblock %}

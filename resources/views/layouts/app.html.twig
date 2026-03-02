@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PostgreManager{% endblock %}</title>
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/assets/css/app.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-dark navbar-dark" style="background: #1a1a2e;">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                    <i class="fas fa-bars"></i>
+                </a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">
+                    <i class="fas fa-user-circle mr-1"></i>
+                    {{ session.user.name ?? 'User' }}
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item" href="/profile"><i class="fas fa-id-card mr-2"></i>Profile</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar elevation-4" style="background: #1a1a2e;">
+        <a href="/dashboard" class="brand-link px-3" style="background: #16213e; border-bottom: 1px solid #0f3460;">
+            <i class="fas fa-database mr-2" style="color: #e94560;"></i>
+            <span class="brand-text font-weight-bold" style="color: #fff;">PostgreManager</span>
+        </a>
+        <div class="sidebar">
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    <i class="fas fa-user-circle fa-2x" style="color: #e94560;"></i>
+                </div>
+                <div class="info">
+                    <a href="/profile" class="d-block" style="color: #fff;">{{ session.user.name ?? '' }}</a>
+                    <small style="color: #aaa;">{{ session.user.role ?? '' }}</small>
+                </div>
+            </div>
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column nav-flat nav-compact" data-widget="treeview" role="menu">
+
+                    <li class="nav-item">
+                        <a href="/dashboard" class="nav-link {% if active == 'dashboard' %}active{% endif %}">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-header" style="color:#aaa;">POSTGRESQL</li>
+
+                    <li class="nav-item">
+                        <a href="/servers" class="nav-link {% if active == 'servers' %}active{% endif %}">
+                            <i class="nav-icon fas fa-server"></i>
+                            <p>Servers</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/databases" class="nav-link {% if active == 'databases' %}active{% endif %}">
+                            <i class="nav-icon fas fa-database"></i>
+                            <p>Databases</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/pg-users" class="nav-link {% if active == 'pg-users' %}active{% endif %}">
+                            <i class="nav-icon fas fa-user-cog"></i>
+                            <p>PG Users & Roles</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-header" style="color:#aaa;">TOOLS</li>
+
+                    <li class="nav-item">
+                        <a href="/query" class="nav-link {% if active == 'query' %}active{% endif %}">
+                            <i class="nav-icon fas fa-terminal"></i>
+                            <p>Query Editor</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/stats" class="nav-link {% if active == 'stats' %}active{% endif %}">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>Statistics</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/maintenance" class="nav-link {% if active == 'maintenance' %}active{% endif %}">
+                            <i class="nav-icon fas fa-tools"></i>
+                            <p>Maintenance</p>
+                        </a>
+                    </li>
+
+                    {% if session.user.role == 'super_admin' or session.user.role == 'admin' %}
+                    <li class="nav-header" style="color:#aaa;">ADMINISTRATION</li>
+                    <li class="nav-item">
+                        <a href="/app-users" class="nav-link {% if active == 'app-users' %}active{% endif %}">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>App Users</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/settings" class="nav-link {% if active == 'settings' %}active{% endif %}">
+                            <i class="nav-icon fas fa-sliders-h"></i>
+                            <p>Settings</p>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">{% block page_title %}{% endblock %}</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="/dashboard">Home</a></li>
+                            {% block breadcrumb %}{% endblock %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="container-fluid">
+                <!-- Flash messages -->
+                {% if session.flash_success is defined %}
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle mr-2"></i>{{ session.flash_success }}
+                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                </div>
+                {% endif %}
+                {% if session.flash_error is defined %}
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-circle mr-2"></i>{{ session.flash_error }}
+                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <strong>PostgreManager</strong> &copy; {{ "now"|date("Y") }}
+        <div class="float-right">PHP 8.4 | FlightPHP | AdminLTE</div>
+    </footer>
+</div>
+
+<!-- jQuery + Bootstrap + AdminLTE -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+<script src="/assets/js/app.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

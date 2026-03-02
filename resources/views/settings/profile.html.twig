@@ -1,0 +1,36 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Profile — PostgreManager{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Profile</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460; max-width:500px;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-id-card mr-2"></i>Profile</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/profile">
+            <div class="form-group">
+                <label style="color:#ddd;">Name</label>
+                <input type="text" name="name" class="form-control pm-input" value="{{ user.name }}" required>
+            </div>
+            <div class="form-group">
+                <label style="color:#ddd;">Email</label>
+                <input type="email" name="email" class="form-control pm-input" value="{{ user.email }}" required>
+            </div>
+            <hr style="border-color:#0f3460;">
+            <div class="form-group">
+                <label style="color:#ddd;">New Password <small style="color:#aaa;">(leave blank to keep current)</small></label>
+                <input type="password" name="password" class="form-control pm-input">
+            </div>
+            <div class="form-group">
+                <label style="color:#ddd;">Role</label>
+                <input type="text" class="form-control pm-input" value="{{ user.role }}" disabled style="opacity:0.6;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="background:#e94560; border-color:#e94560;">
+                <i class="fas fa-save mr-1"></i>Update Profile
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

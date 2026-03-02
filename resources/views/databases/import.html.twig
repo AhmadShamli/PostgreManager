@@ -1,0 +1,39 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Import — {{ db_name }} — PostgreManager{% endblock %}
+{% block page_title %}Import SQL — {{ db_name }}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item"><a href="/databases?server_id={{ server_id }}">Databases</a></li><li class="breadcrumb-item active">Import</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460; max-width:520px;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-upload mr-2"></i>Import SQL into <code style="color:#17a2b8;">{{ db_name }}</code></h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i>This will execute the SQL file against <strong>{{ db_name }}</strong>. Ensure you have a backup first.
+        </div>
+        <form method="POST" action="/databases/{{ db_name }}/import" enctype="multipart/form-data">
+            <input type="hidden" name="server_id" value="{{ server_id }}">
+            <div class="form-group">
+                <label style="color:#ddd;">SQL File (.sql)</label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="sql_file" name="sql_file" accept=".sql" required>
+                    <label class="custom-file-label" for="sql_file" style="background:#0f3460; border-color:#0f3460; color:#aaa;">Choose file...</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-warning mr-2" onclick="return confirm('Execute SQL against {{ db_name }}?')">
+                <i class="fas fa-upload mr-1"></i>Import
+            </button>
+            <a href="/databases?server_id={{ server_id }}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('sql_file').addEventListener('change', function() {
+    document.querySelector('.custom-file-label').textContent = this.files[0]?.name || 'Choose file...';
+});
+</script>
+{% endblock %}

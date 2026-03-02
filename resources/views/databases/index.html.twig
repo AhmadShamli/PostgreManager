@@ -1,0 +1,72 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Databases — PostgreManager{% endblock %}
+{% block page_title %}Databases{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Databases</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-database mr-2"></i>Databases</h3>
+        <a href="/databases/create?server_id={{ server_id }}" class="btn btn-sm btn-primary" style="background:#e94560; border-color:#e94560;">
+            <i class="fas fa-plus mr-1"></i>New Database
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;">
+                <tr>
+                    <th>Name</th><th>Owner</th><th>Size</th><th>Connection Limit</th><th>Collation</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for db in databases %}
+            <tr>
+                <td>
+                    <a href="/databases/{{ db.name }}/schemas?server_id={{ server_id }}" style="color:#17a2b8;">
+                        <i class="fas fa-database mr-1"></i>{{ db.name }}
+                    </a>
+                </td>
+                <td>{{ db.owner }}</td>
+                <td><span class="badge badge-secondary">{{ db.size }}</span></td>
+                <td>{{ db.conn_limit == -1 ? '∞' : db.conn_limit }}</td>
+                <td>{{ db.collation }}</td>
+                <td>
+                    <a href="/databases/{{ db.name }}/export?server_id={{ server_id }}" class="btn btn-xs btn-outline-info" title="Export">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <a href="/databases/{{ db.name }}/import?server_id={{ server_id }}" class="btn btn-xs btn-outline-warning" title="Import">
+                        <i class="fas fa-upload"></i>
+                    </a>
+                    <button class="btn btn-xs btn-outline-danger" title="Drop"
+                        onclick="confirmDrop('{{ db.name }}', '/databases/{{ db.name }}/drop', 'database')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center p-4" style="color:#555;">No databases found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden drop form -->
+<form id="drop-form" method="POST" style="display:none;">
+    <input type="hidden" name="server_id" value="{{ server_id }}">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDrop(name, url, type) {
+    if (confirm('Drop ' + type + ' "' + name + '"? This cannot be undone!')) {
+        const form = document.getElementById('drop-form');
+        form.action = url;
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Dashboard — PostgreManager{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+
+{% block content %}
+<!-- Server Switcher -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="GET" action="/dashboard" class="form-inline">
+            <label class="mr-2" style="color:#555;font-weight:600;">Server:</label>
+            <select name="server_id" class="form-control mr-2" onchange="this.form.submit()">
+                <option value="">— Select Server —</option>
+                {% for p in profiles %}
+                <option value="{{ p.id }}" {% if p.id == active_server %}selected{% endif %}>{{ p.label }} ({{ p.host }})</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="/servers/create" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-plus mr-1"></i>Add Server
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger"><i class="fas fa-exclamation-circle mr-2"></i>{{ error }}</div>
+{% endif %}
+
+{% if stats %}
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="info-box" style="background:#1a1a2e; border-left:4px solid #e94560;">
+            <span class="info-box-icon" style="background:#e94560;"><i class="fas fa-plug"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text" style="color:#aaa;">Active Connections</span>
+                <span class="info-box-number" style="color:#fff;">{{ stats.connections }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="info-box" style="background:#1a1a2e; border-left:4px solid #17a2b8;">
+            <span class="info-box-icon" style="background:#17a2b8;"><i class="fas fa-database"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text" style="color:#aaa;">Databases</span>
+                <span class="info-box-number" style="color:#fff;">{{ stats.db_count }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="info-box" style="background:#1a1a2e; border-left:4px solid #28a745;">
+            <span class="info-box-icon" style="background:#28a745;"><i class="fas fa-hdd"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text" style="color:#aaa;">Total Size</span>
+                <span class="info-box-number" style="color:#fff;">{{ stats.total_size }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="info-box" style="background:#1a1a2e; border-left:4px solid #ffc107;">
+            <span class="info-box-icon" style="background:#ffc107;"><i class="fas fa-tachometer-alt"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text" style="color:#aaa;">Cache Hit Ratio</span>
+                <span class="info-box-number" style="color:#fff;">{{ stats.cache_hit }}%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Info + Active Queries -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title" style="color:#e94560;"><i class="fas fa-server mr-2"></i>Server Info</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0" style="color:#ddd;">
+                    <tr><th style="color:#aaa; border-color:#0f3460;">Version</th><td style="border-color:#0f3460;">{{ stats.version|slice(0,50) }}</td></tr>
+                    <tr><th style="color:#aaa; border-color:#0f3460;">Uptime</th><td style="border-color:#0f3460;">{{ stats.uptime }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+            <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+                <h3 class="card-title" style="color:#e94560;"><i class="fas fa-terminal mr-2"></i>Active Queries</h3>
+            </div>
+            <div class="card-body p-0">
+                {% if stats.active_queries %}
+                <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" style="color:#ddd;">
+                    <thead style="background:#0f3460;">
+                        <tr><th>PID</th><th>User</th><th>State</th><th>Duration (s)</th><th>Query</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for q in stats.active_queries %}
+                    <tr>
+                        <td>{{ q.pid }}</td>
+                        <td>{{ q.usename }}</td>
+                        <td><span class="badge badge-{{ q.state == 'active' ? 'success' : 'secondary' }}">{{ q.state }}</span></td>
+                        <td>{{ q.duration_s }}</td>
+                        <td><code style="color:#aaa;font-size:0.75rem;">{{ q.query|slice(0,80) }}</code></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% else %}
+                <div class="text-center p-4" style="color:#555;">No active queries</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% elseif not error %}
+<div class="text-center p-5" style="color:#555;">
+    <i class="fas fa-server fa-3x mb-3"></i>
+    <p>Select a server above to view statistics.</p>
+    {% if not profiles %}
+    <a href="/servers/create" class="btn btn-primary" style="background:#e94560; border-color:#e94560;">
+        <i class="fas fa-plus mr-2"></i>Add Your First Server
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

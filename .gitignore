@@ -1,0 +1,5 @@
+vendor/
+storage/twig_cache/
+.env
+*.log
+*.sql.bak

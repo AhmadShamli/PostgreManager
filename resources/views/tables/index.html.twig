@@ -1,0 +1,50 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Tables — PostgreManager{% endblock %}
+{% block page_title %}Tables — {{ schema }} @ {{ db }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/databases?server_id={{ server_id }}">Databases</a></li>
+<li class="breadcrumb-item"><a href="/databases/{{ db }}/schemas?server_id={{ server_id }}">{{ db }}</a></li>
+<li class="breadcrumb-item active">{{ schema }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title" style="color:#e94560;"><i class="fas fa-table mr-2"></i>Tables in <code style="color:#17a2b8;">{{ schema }}</code></h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;"><tr><th>Table</th><th>Approx Rows</th><th>Size</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for t in tables %}
+            <tr>
+                <td>
+                    <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}" style="color:#17a2b8;">
+                        <i class="fas fa-table mr-1"></i>{{ t.name }}
+                    </a>
+                </td>
+                <td>{{ t.approx_rows|number_format }}</td>
+                <td><span class="badge badge-secondary">{{ t.size }}</span></td>
+                <td>
+                    <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}/data?server_id={{ server_id }}" class="btn btn-xs btn-outline-info" title="Browse Data"><i class="fas fa-search"></i></a>
+                    <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}?server_id={{ server_id }}" class="btn btn-xs btn-outline-secondary" title="Structure"><i class="fas fa-columns"></i></a>
+                    <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}/export?server_id={{ server_id }}&format=csv" class="btn btn-xs btn-outline-success" title="Export CSV"><i class="fas fa-file-csv"></i></a>
+                    <button class="btn btn-xs btn-outline-danger" title="Drop"
+                        onclick="if(confirm('Drop table {{ t.name }}?'))document.getElementById('drop-{{ t.name }}').submit()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <form id="drop-{{ t.name }}" method="POST" action="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}/drop" style="display:none;">
+                        <input type="hidden" name="server_id" value="{{ server_id }}">
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center p-4" style="color:#555;">No tables found in this schema.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

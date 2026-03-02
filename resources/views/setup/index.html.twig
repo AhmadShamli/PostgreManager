@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup — PostgreManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="hold-transition login-page" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+
+<div class="login-box" style="width: 480px;">
+    <div class="text-center mb-4">
+        <i class="fas fa-database fa-3x" style="color: #e94560;"></i>
+        <h2 class="mt-2 font-weight-bold" style="color: #fff;">PostgreManager</h2>
+        <p style="color: #aaa;">Create your Super Admin account to get started</p>
+    </div>
+
+    <div class="card" style="border-color: #0f3460; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
+        <div class="card-header" style="background: rgba(233,69,96,0.15); border-bottom: 1px solid #0f3460;">
+            <h3 class="card-title" style="color:#e94560;">
+                <i class="fas fa-user-shield mr-2"></i>Initial Setup
+            </h3>
+        </div>
+        <div class="card-body">
+
+            {# ── Extension Check ── #}
+            {% if extensions is defined %}
+            <div class="mb-3">
+                <p class="mb-1" style="color:#aaa; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">
+                    <i class="fas fa-puzzle-piece mr-1"></i>PHP Extensions
+                </p>
+                <div class="row" style="row-gap:4px;">
+                {% for ext in extensions %}
+                    <div class="col-6">
+                        <div class="d-flex align-items-center" style="font-size:0.82rem;">
+                            {% if ext.loaded %}
+                                <i class="fas fa-check-circle mr-1" style="color:#28a745;"></i>
+                                <span style="color:#aaa;">{{ ext.name }}</span>
+                            {% elseif ext.critical %}
+                                <i class="fas fa-times-circle mr-1" style="color:#e94560;"></i>
+                                <span style="color:#e94560; font-weight:600;">{{ ext.name }}</span>
+                                <span class="badge badge-danger ml-1" style="font-size:0.65rem;">required</span>
+                            {% else %}
+                                <i class="fas fa-exclamation-circle mr-1" style="color:#ffc107;"></i>
+                                <span style="color:#ffc107;">{{ ext.name }}</span>
+                                <span class="badge badge-warning ml-1" style="font-size:0.65rem;">optional</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+
+                {% if has_missing %}
+                <div class="alert alert-danger mt-2 mb-0 py-2" style="font-size:0.82rem;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Install missing required extensions before continuing.
+                </div>
+                {% else %}
+                <div class="alert alert-success mt-2 mb-0 py-2" style="font-size:0.82rem; background:rgba(40,167,69,0.15); border-color:#28a745; color:#28a745;">
+                    <i class="fas fa-check-circle mr-1"></i>All required extensions are loaded.
+                </div>
+                {% endif %}
+            </div>
+            <hr style="border-color:#0f3460; margin: 1rem 0;">
+            {% endif %}
+
+            {% if errors is defined %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            </div>
+            {% endif %}
+
+            <form action="/setup" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="form-group">
+                    <label style="color:#ddd;">Full Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control pm-input"
+                           value="{{ old.name ?? '' }}" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label style="color:#ddd;">Email Address <span class="text-danger">*</span></label>
+                    <input type="email" name="email" class="form-control pm-input"
+                           value="{{ old.email ?? '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label style="color:#ddd;">Password <small style="color:#aaa;">(min. 8 characters)</small></label>
+                    <input type="password" name="password" class="form-control pm-input" required>
+                </div>
+                <div class="form-group">
+                    <label style="color:#ddd;">Confirm Password</label>
+                    <input type="password" name="password_confirm" class="form-control pm-input" required>
+                </div>
+
+                <button type="submit" class="btn btn-block btn-danger" style="background:#e94560; border-color:#e94560;"
+                    {% if has_missing is defined and has_missing %}disabled title="Install required extensions first"{% endif %}>
+                    <i class="fas fa-rocket mr-2"></i>Complete Setup
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <p class="text-center mt-3" style="color:#555; font-size:0.78rem;">
+        <i class="fas fa-lock mr-1"></i>App data stored locally in SQLite — no external DB required
+    </p>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+</body>
+</html>

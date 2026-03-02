@@ -1,0 +1,45 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Server Profiles — PostgreManager{% endblock %}
+{% block page_title %}Server Profiles{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Servers</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-server mr-2"></i>Server Profiles</h3>
+        <a href="/servers/create" class="btn btn-sm btn-primary" style="background:#e94560; border-color:#e94560;">
+            <i class="fas fa-plus mr-1"></i>Add Server
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;">
+                <tr><th>Label</th><th>Host</th><th>Port</th><th>Database</th><th>PG User</th><th>Shared</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for p in profiles %}
+            <tr>
+                <td><i class="fas fa-server mr-1" style="color:#e94560;"></i><strong>{{ p.label }}</strong></td>
+                <td>{{ p.host }}</td>
+                <td>{{ p.port }}</td>
+                <td>{{ p.db_name }}</td>
+                <td>{{ p.pg_username }}</td>
+                <td>{% if p.is_shared %}<span class="badge badge-info">Yes</span>{% else %}<span class="badge badge-secondary">No</span>{% endif %}</td>
+                <td>
+                    <a href="/dashboard?server_id={{ p.id }}" class="btn btn-xs btn-outline-success" title="Connect"><i class="fas fa-plug"></i></a>
+                    <a href="/servers/{{ p.id }}/edit" class="btn btn-xs btn-outline-warning" title="Edit"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="/servers/{{ p.id }}/delete" style="display:inline;" onsubmit="return confirm('Delete this profile?')">
+                        <button class="btn btn-xs btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center p-4" style="color:#555;">No servers added yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

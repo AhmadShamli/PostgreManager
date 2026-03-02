@@ -1,0 +1,45 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}PG Users & Roles — PostgreManager{% endblock %}
+{% block page_title %}PostgreSQL Users & Roles{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">PG Users</li>{% endblock %}
+
+{% block content %}
+<div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background:#16213e; border-bottom:1px solid #0f3460;">
+        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-user-cog mr-2"></i>Roles</h3>
+        <a href="/pg-users/create?server_id={{ server_id }}" class="btn btn-sm btn-primary" style="background:#e94560; border-color:#e94560;">
+            <i class="fas fa-plus mr-1"></i>New Role
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover mb-0" style="color:#ddd;">
+            <thead style="background:#0f3460;">
+                <tr><th>Name</th><th>Login</th><th>Superuser</th><th>Create DB</th><th>Replication</th><th>Conn Limit</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for r in roles %}
+            <tr>
+                <td><i class="fas fa-user mr-1" style="color:#e94560;"></i>{{ r.name }}</td>
+                <td>{{ r.rolcanlogin ? '<span class="badge badge-success">Yes</span>'|raw : '<span class="badge badge-secondary">No</span>'|raw }}</td>
+                <td>{{ r.rolsuper ? '<span class="badge badge-danger">Yes</span>'|raw : '—' }}</td>
+                <td>{{ r.rolcreatedb ? '<span class="badge badge-info">Yes</span>'|raw : '—' }}</td>
+                <td>{{ r.rolreplication ? '<span class="badge badge-warning">Yes</span>'|raw : '—' }}</td>
+                <td>{{ r.conn_limit == -1 ? '∞' : r.conn_limit }}</td>
+                <td>
+                    <a href="/pg-users/{{ r.name }}/edit?server_id={{ server_id }}" class="btn btn-xs btn-outline-warning"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="/pg-users/{{ r.name }}/drop" style="display:inline;" onsubmit="return confirm('Drop role {{ r.name }}?')">
+                        <input type="hidden" name="server_id" value="{{ server_id }}">
+                        <button class="btn btn-xs btn-outline-danger"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center p-4" style="color:#555;">No roles found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

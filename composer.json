@@ -1,0 +1,22 @@
+{
+    "name": "postgre-manager/app",
+    "description": "Web-based PostgreSQL Manager",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "flightphp/core": "^3.0",
+        "twig/twig": "^3.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "PostgreManager\\": "app/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": []
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
