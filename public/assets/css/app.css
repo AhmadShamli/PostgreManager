@@ -41,6 +41,8 @@ body, .main-header, .main-sidebar, .content-wrapper, .main-footer {
 
 /* Table */
 .table td, .table th { vertical-align: middle !important; border-color: #0f3460 !important; }
+.table-responsive       { background: transparent !important; }
+
 .table-hover tbody tr:hover td,
 .table-hover tbody tr:hover th { background-color: rgba(233,69,96,0.12) !important; color: #fff !important; }
 
