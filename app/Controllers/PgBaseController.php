@@ -13,6 +13,7 @@ abstract class PgBaseController extends BaseController
 {
     protected PgService $pg;
     protected int $serverId;
+    protected array $activeProfile = [];
 
     public function __construct()
     {
@@ -36,8 +37,10 @@ abstract class PgBaseController extends BaseController
         $_SESSION['active_server_id'] = $serverId;
         $this->serverId = $serverId;
 
-        $profileModel = new ServerProfile($this->db());
-        $this->pg     = new PgService($profileModel);
+        $profileModel        = new ServerProfile($this->db());
+        $profile             = $profileModel->find($serverId);
+        $this->activeProfile = $profile ?? [];
+        $this->pg            = new PgService($profileModel);
         $this->pg->connect($serverId, $dbName);
     }
 }

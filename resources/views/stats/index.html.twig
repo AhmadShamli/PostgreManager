@@ -8,6 +8,16 @@
 {% endblock %}
 
 {% block content %}
+<div class="mb-3 d-flex align-items-center">
+    <i class="fas fa-server mr-2" style="color:#e94560;"></i>
+    <span style="color:#aaa; font-size:0.9rem;">
+        Server: <strong style="color:#ddd;">{{ server_label }}</strong>
+        <span class="mx-2" style="color:#444;">|</span>
+        Host: <strong style="color:#ddd;">{{ server_host }}</strong>
+        <span class="mx-2" style="color:#444;">|</span>
+        DB: <strong style="color:#e94560;">{{ server_db }}</strong>
+    </span>
+</div>
 <div class="row">
     <!-- Cache Hit -->
     <div class="col-md-3">
