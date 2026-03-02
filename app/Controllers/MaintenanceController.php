@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PostgreManager\Controllers;
 
+use Flight;
+
 class MaintenanceController extends PgBaseController
 {
     public function index(): void

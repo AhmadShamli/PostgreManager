@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PostgreManager\Controllers;
 
+use Flight;
 use Twig\Environment;
+
 
 abstract class BaseController
 {

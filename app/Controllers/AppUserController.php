@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PostgreManager\Controllers;
 
+use Flight;
 use PostgreManager\Models\User;
 
 class AppUserController extends BaseController
