@@ -128,7 +128,20 @@ body.pm-light .card-title        { color: #e94560 !important; }
 
 /* Tables */
 body.pm-light .table td,
-body.pm-light .table th          { border-color: #dee2e6 !important; color: #333 !important; }
+body.pm-light .table th          { border-color: #dee2e6 !important; }
+body.pm-light .table td          { color: #333 !important; }
+body.pm-light .table thead th    { color: #fff !important; background-color: #0f3460 !important; font-weight: 600; letter-spacing: .03em; }
+
+/* Badges */
+body.pm-light .badge             { font-weight: 600; }
+body.pm-light .badge-secondary   { background-color: #6c757d !important; color: #fff !important; }
+body.pm-light .badge-success     { background-color: #28a745 !important; color: #fff !important; }
+body.pm-light .badge-danger      { background-color: #dc3545 !important; color: #fff !important; }
+body.pm-light .badge-warning     { background-color: #ffc107 !important; color: #212529 !important; }
+body.pm-light .badge-info        { background-color: #17a2b8 !important; color: #fff !important; }
+body.pm-light .badge-primary     { background-color: #e94560 !important; color: #fff !important; }
+
+
 
 /* Override inline color styles on labels and text inside content */
 body.pm-light .content label,
