@@ -37,8 +37,9 @@ if ($isNewDb) {
     $pdo->exec($schema);
 }
 
-Flight::register('db', PDO::class, [], fn() => $pdo);
+Flight::map('db', fn() => $pdo);
 Flight::set('db_ready', true);
+
 
 // ── Twig ──────────────────────────────────────────────────────────────────
 $loader = new FilesystemLoader(__DIR__ . '/resources/views');
