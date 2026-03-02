@@ -147,7 +147,8 @@ body.pm-light .badge-primary     { background-color: #e94560 !important; color: 
 body.pm-light .content label,
 body.pm-light .content p,
 body.pm-light .content small,
-body.pm-light .content span      { color: #555 !important; }
+body.pm-light .content span:not(.badge) { color: #555 !important; }
+
 body.pm-light .content [style*="color:#ddd"],
 body.pm-light .content [style*="color: #ddd"]  { color: #333 !important; }
 body.pm-light .content [style*="color:#aaa"],
