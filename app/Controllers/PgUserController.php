@@ -41,7 +41,22 @@ class PgUserController extends PgBaseController
                 'replication' => !empty($_POST['replication']),
                 'password'    => $_POST['password'] ?? '',
             ]);
-            $_SESSION['flash_success'] = "Role \"{$name}\" created.";
+
+            // Optionally create a database owned by this role
+            if (!empty($_POST['create_db'])) {
+                $dbName = trim($_POST['db_name'] ?? $name);
+                if (!$dbName) $dbName = $name;
+                try {
+                    $conn = $this->pg->getConnection();
+                    $conn->exec('CREATE DATABASE "' . addslashes($dbName) . '" OWNER "' . addslashes($name) . '"');
+                    $_SESSION['flash_success'] = "Role \"{$name}\" and database \"{$dbName}\" created.";
+                } catch (\Exception $e) {
+                    $_SESSION['flash_success'] = "Role \"{$name}\" created.";
+                    $_SESSION['flash_warning'] = "Could not create database: " . $e->getMessage();
+                }
+            } else {
+                $_SESSION['flash_success'] = "Role \"{$name}\" created.";
+            }
         } catch (\Exception $e) {
             $_SESSION['flash_error'] = $e->getMessage();
         }

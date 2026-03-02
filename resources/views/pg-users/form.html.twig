@@ -15,7 +15,19 @@
             {% if not role %}
             <div class="form-group">
                 <label style="color:#ddd;">Role Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control pm-input" required>
+                <input type="text" name="name" id="role-name" class="form-control pm-input" required>
+            </div>
+
+            <div class="form-group">
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input" id="create_db" name="create_db" checked
+                           onchange="document.getElementById('db-name-group').style.display = this.checked ? '' : 'none';">
+                    <label class="custom-control-label" for="create_db" style="color:#ddd;">Also create a database for this role</label>
+                </div>
+                <div id="db-name-group" class="mt-1">
+                    <input type="text" name="db_name" id="db-name" class="form-control pm-input"
+                           placeholder="Database name">
+                </div>
             </div>
             {% endif %}
 
@@ -45,4 +57,19 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var nameEl = document.getElementById('role-name');
+    var dbEl   = document.getElementById('db-name');
+    if (!nameEl || !dbEl) return;
+    var userEdited = false;
+    dbEl.addEventListener('input', function() { userEdited = true; });
+    nameEl.addEventListener('input', function() {
+        if (!userEdited) dbEl.value = this.value;
+    });
+})();
+</script>
 {% endblock %}
