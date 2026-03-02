@@ -87,18 +87,52 @@ body, .main-header, .main-sidebar, .content-wrapper, .main-footer {
 /* ── Light Mode ───────────────────────────────────────────── */
 body.pm-light,
 body.pm-light .content-wrapper   { background: #f4f6f9 !important; color: #333 !important; }
+
+/* Navbar */
 body.pm-light .main-header       { background: #fff !important; border-bottom: 1px solid #ddd !important; }
 body.pm-light .main-header .nav-link,
-body.pm-light .main-header i     { color: #333 !important; }
-body.pm-light .main-sidebar      { background: #343a40 !important; }
+body.pm-light .main-header .navbar-nav i { color: #555 !important; }
+
+/* Sidebar — light */
+body.pm-light .main-sidebar               { background: #f8f9fa !important; border-right: 1px solid #dee2e6; }
+body.pm-light .main-sidebar .brand-link   { background: #e9ecef !important; border-bottom: 1px solid #dee2e6 !important; }
+body.pm-light .main-sidebar .brand-text   { color: #333 !important; }
+body.pm-light .main-sidebar .fa-database  { color: #e94560 !important; }
+body.pm-light .main-sidebar .user-panel .info a { color: #333 !important; }
+body.pm-light .main-sidebar .user-panel small   { color: #777 !important; }
+body.pm-light .main-sidebar .nav-header          { color: #999 !important; }
+body.pm-light .main-sidebar .nav-link            { color: #444 !important; }
+body.pm-light .main-sidebar .nav-link:hover      { background: rgba(233,69,96,0.1) !important; color: #e94560 !important; }
+body.pm-light .main-sidebar .nav-link.active     { background: #e94560 !important; color: #fff !important; }
+body.pm-light .main-sidebar .nav-icon            { color: inherit !important; }
+
+/* Footer */
 body.pm-light .main-footer       { background: #fff !important; border-top: 1px solid #ddd !important; color: #666 !important; }
+
+/* Page title */
 body.pm-light .content-header h1 { color: #333 !important; }
-body.pm-light .card              { background: #fff !important; border-color: #dee2e6 !important; color: #333 !important; }
+body.pm-light .breadcrumb-item a  { color: #e94560 !important; }
+
+/* Cards */
+body.pm-light .card              { background: #fff !important; border-color: #dee2e6 !important; }
 body.pm-light .card-header       { background: #f8f9fa !important; border-color: #dee2e6 !important; }
-body.pm-light .table td,
-body.pm-light .table th          { border-color: #dee2e6 !important; color: #333 !important; }
 body.pm-light .card-header h3,
 body.pm-light .card-title        { color: #e94560 !important; }
-body.pm-light .breadcrumb        { background: transparent; }
-body.pm-light .breadcrumb a      { color: #e94560; }
+
+/* Tables */
+body.pm-light .table td,
+body.pm-light .table th          { border-color: #dee2e6 !important; color: #333 !important; }
+
+/* Override inline color styles on labels and text inside content */
+body.pm-light .content label,
+body.pm-light .content p,
+body.pm-light .content small,
+body.pm-light .content span      { color: #555 !important; }
+body.pm-light .content [style*="color:#ddd"],
+body.pm-light .content [style*="color: #ddd"]  { color: #333 !important; }
+body.pm-light .content [style*="color:#aaa"],
+body.pm-light .content [style*="color: #aaa"]  { color: #666 !important; }
+body.pm-light .content [style*="color:#fff"],
+body.pm-light .content [style*="color: #fff"]  { color: #333 !important; }
+
 
