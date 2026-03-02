@@ -33,13 +33,13 @@ Flight::route('GET /logout',         [AuthController::class, 'logout']);
 Flight::route('GET /dashboard',      [DashboardController::class, 'index']);
 
 // ── Server Profiles ───────────────────────────────────────────────────────────
-Flight::route('GET /servers',           [ServerProfileController::class, 'index']);
-Flight::route('GET /servers/create',    [ServerProfileController::class, 'create']);
-Flight::route('POST /servers',          [ServerProfileController::class, 'store']);
-Flight::route('GET /servers/@id/edit',  [ServerProfileController::class, 'edit']);
-Flight::route('POST /servers/@id',      [ServerProfileController::class, 'update']);
+Flight::route('GET /servers',             [ServerProfileController::class, 'index']);
+Flight::route('GET /servers/create',      [ServerProfileController::class, 'create']);
+Flight::route('POST /servers',            [ServerProfileController::class, 'store']);
+Flight::route('POST /servers/test',       [ServerProfileController::class, 'test']);
+Flight::route('GET /servers/@id/edit',    [ServerProfileController::class, 'edit']);
+Flight::route('POST /servers/@id',        [ServerProfileController::class, 'update']);
 Flight::route('POST /servers/@id/delete', [ServerProfileController::class, 'destroy']);
-Flight::route('POST /servers/test',     [ServerProfileController::class, 'test']);
 
 // ── Databases ─────────────────────────────────────────────────────────────────
 Flight::route('GET /databases',               [DatabaseController::class, 'index']);
