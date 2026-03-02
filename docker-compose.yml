@@ -16,6 +16,8 @@ services:
         docker-php-ext-install pdo pdo_pgsql pdo_sqlite &&
         curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
         composer install --no-dev --optimize-autoloader &&
+        mkdir -p /var/www/html/storage/twig_cache &&
+        chown -R www-data:www-data /var/www/html/storage &&
         php-fpm
       "
 
