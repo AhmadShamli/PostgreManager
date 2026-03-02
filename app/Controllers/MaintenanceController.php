@@ -63,10 +63,6 @@ class MaintenanceController extends PgBaseController
     public function logs(): void
     {
         $this->resolvePg();
-        $logs = $this->pg->getConnection()->query(
-            "SELECT log_time, user_name, database_name, message FROM pg_catalog.pg_reading_file('pg_log/postgresql.log') LIMIT 100"
-        );
-        // If log function unavailable, show recent activity
         $activity = $this->pg->getConnection()->query(
             "SELECT pid, usename, application_name, state, left(query,300) AS query, query_start
              FROM pg_stat_activity WHERE query_start IS NOT NULL
