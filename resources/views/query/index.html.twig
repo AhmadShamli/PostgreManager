@@ -22,6 +22,9 @@
                 <div>
                     <select id="db-select" class="form-control form-control-sm d-inline-block" style="width:auto; background:#0f3460; color:#ddd; border-color:#0f3460;">
                         <option value="">— Select DB —</option>
+                        {% for db in databases %}
+                        <option value="{{ db.name }}">{{ db.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>

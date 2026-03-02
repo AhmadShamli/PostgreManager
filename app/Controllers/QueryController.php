@@ -8,11 +8,12 @@ class QueryController extends PgBaseController
 {
     public function index(): void
     {
-        $this->requireAuth();
+        $this->resolvePg();
         $this->render('query/index.html.twig', [
             'active'    => 'query',
+            'databases' => $this->pg->listDatabases(),
             'history'   => $this->getHistory(),
-            'server_id' => $_SESSION['active_server_id'] ?? 0,
+            'server_id' => $this->serverId,
         ]);
     }
 
