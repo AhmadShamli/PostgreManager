@@ -7,23 +7,25 @@
 
 {% block content %}
 <!-- Server Switcher -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form method="GET" action="/dashboard" class="form-inline">
-            <label class="mr-2" style="color:#555;font-weight:600;">Server:</label>
-            <select name="server_id" class="form-control mr-2" onchange="this.form.submit()">
+<div class="mb-3 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-server mr-2" style="color:#e94560;"></i>
+        <form method="GET" action="/dashboard" class="d-flex align-items-center">
+            <label style="color:#aaa; font-size:0.85rem; margin-right:6px;">Server:</label>
+            <select name="server_id" class="form-control form-control-sm pm-input" style="width:auto;"
+                    onchange="this.form.submit()">
                 <option value="">— Select Server —</option>
                 {% for p in profiles %}
-                <option value="{{ p.id }}" {% if p.id == active_server %}selected{% endif %}>{{ p.label }} ({{ p.host }})</option>
+                <option value="{{ p.id }}" {% if p.id == active_server %}selected{% endif %}>
+                    {{ p.label }} ({{ p.host }}:{{ p.port }})
+                </option>
                 {% endfor %}
             </select>
         </form>
     </div>
-    <div class="col-md-6 text-right">
-        <a href="/servers/create" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-plus mr-1"></i>Add Server
-        </a>
-    </div>
+    <a href="/servers/create" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-plus mr-1"></i>Add Server
+    </a>
 </div>
 
 {% if error %}
