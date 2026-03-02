@@ -10,8 +10,9 @@
 {% block content %}
 <div class="mb-3 d-flex align-items-center">
     <i class="fas fa-server mr-2" style="color:#e94560;"></i>
-    <form method="GET" action="/stats" class="d-flex align-items-center">
-        <select name="server_id" class="form-control form-control-sm pm-input mr-2" style="width:auto;"
+    <form method="GET" action="/stats" class="d-flex align-items-center flex-wrap" id="stats-filter">
+        <label style="color:#aaa; font-size:0.85rem; margin-right:6px;">Server:</label>
+        <select name="server_id" class="form-control form-control-sm pm-input mr-3" style="width:auto;"
                 onchange="this.form.submit()">
             {% for s in all_servers %}
             <option value="{{ s.id }}" {% if s.id == server_id %}selected{% endif %}>
@@ -19,9 +20,15 @@
             </option>
             {% endfor %}
         </select>
-        <span style="color:#aaa; font-size:0.85rem;">
-            DB: <strong style="color:#e94560;">{{ server_db }}</strong>
-        </span>
+        <label style="color:#aaa; font-size:0.85rem; margin-right:6px;">Database:</label>
+        <select name="db" class="form-control form-control-sm pm-input" style="width:auto;"
+                onchange="this.form.submit()">
+            {% for db in databases %}
+            <option value="{{ db.name }}" {% if db.name == selected_db %}selected{% endif %}>
+                {{ db.name }}
+            </option>
+            {% endfor %}
+        </select>
     </form>
 </div>
 <div class="row">
