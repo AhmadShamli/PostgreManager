@@ -132,7 +132,14 @@ body.pm-light .content [style*="color:#ddd"],
 body.pm-light .content [style*="color: #ddd"]  { color: #333 !important; }
 body.pm-light .content [style*="color:#aaa"],
 body.pm-light .content [style*="color: #aaa"]  { color: #666 !important; }
-body.pm-light .content [style*="color:#fff"],
-body.pm-light .content [style*="color: #fff"]  { color: #333 !important; }
+/* Inputs */
+body.pm-light .pm-input,
+body.pm-light .form-control       { background: #fff !important; color: #333 !important; border-color: #ced4da !important; }
+body.pm-light .pm-input::placeholder,
+body.pm-light .form-control::placeholder { color: #999 !important; }
+body.pm-light .pm-input:focus,
+body.pm-light .form-control:focus  { border-color: #e94560 !important; box-shadow: 0 0 0 0.15rem rgba(233,69,96,0.2) !important; }
+body.pm-light .pm-input option     { background: #fff; color: #333; }
+
 
 
