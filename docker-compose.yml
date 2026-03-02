@@ -12,7 +12,7 @@ services:
       - ovhgra1
     command: >
       sh -c "
-        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev -q &&
+        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev unzip zip git -q &&
         docker-php-ext-install pdo pdo_pgsql pdo_sqlite &&
         curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
         composer install --no-dev --optimize-autoloader &&
