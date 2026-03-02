@@ -99,3 +99,22 @@ Flight::route('GET /settings',       [SettingsController::class, 'index']);
 Flight::route('POST /settings',      [SettingsController::class, 'update']);
 Flight::route('GET /profile',        [SettingsController::class, 'profile']);
 Flight::route('POST /profile',       [SettingsController::class, 'updateProfile']);
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+Flight::route('POST /theme/toggle', function () {
+    $current = $_SESSION['theme'] ?? 'dark';
+    $next    = $current === 'dark' ? 'light' : 'dark';
+    $_SESSION['theme'] = $next;
+    // Persist to DB
+    Flight::db()->prepare('INSERT OR REPLACE INTO pm_settings (key, value) VALUES (?, ?)')
+        ->execute(['ui_theme', $next]);
+    Flight::json(['theme' => $next]);
+});
+
+// ── Flash message clear ───────────────────────────────────────────────────────
+Flight::route('POST /flash/clear', function () {
+    unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+    Flight::json(['ok' => true]);
+});
+
+

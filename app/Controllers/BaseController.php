@@ -45,6 +45,17 @@ abstract class BaseController
             $this->redirect('/login');
             exit;
         }
+
+        // Session timeout enforcement
+        $timeoutMins = (int) \Flight::get('session_timeout');
+        if ($timeoutMins > 0 && isset($_SESSION['last_activity'])) {
+            if (time() - $_SESSION['last_activity'] > $timeoutMins * 60) {
+                session_destroy();
+                header('Location: /login?reason=timeout');
+                exit;
+            }
+        }
+        $_SESSION['last_activity'] = time();
     }
 
     protected function requireRole(string ...$roles): void

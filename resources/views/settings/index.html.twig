@@ -15,13 +15,19 @@
                     <div class="form-group">
                         <label style="color:#ddd;">UI Theme</label>
                         <select name="ui_theme" class="form-control pm-input">
-                            <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
+                            <option value="dark"  {% if theme == 'dark'  %}selected{% endif %}>Dark</option>
                             <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
                         </select>
                     </div>
                     <div class="form-group">
+                        <label style="color:#ddd;">Session Timeout <small style="color:#aaa;">(minutes, 0 = never)</small></label>
+                        <input type="number" name="session_timeout" class="form-control pm-input"
+                               value="{{ session_timeout }}" min="0" max="1440">
+                    </div>
+                    <div class="form-group">
                         <label style="color:#ddd;">Query Timeout (seconds)</label>
-                        <input type="number" name="query_timeout" class="form-control pm-input" value="{{ timeout }}" min="5" max="300">
+                        <input type="number" name="query_timeout" class="form-control pm-input"
+                               value="{{ query_timeout }}" min="5" max="300">
                     </div>
                     <div class="form-group">
                         <label style="color:#ddd;">Default Row Limit</label>

@@ -21,8 +21,7 @@ class Setting
     public function set(string $key, string $value): void
     {
         $this->db->prepare(
-            'INSERT INTO pm_settings (key, value) VALUES (:key, :value)
-             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value'
+            'INSERT OR REPLACE INTO pm_settings (key, value) VALUES (:key, :value)'
         )->execute([':key' => $key, ':value' => $value]);
     }
 

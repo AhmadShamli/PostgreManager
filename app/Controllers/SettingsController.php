@@ -23,19 +23,21 @@ class SettingsController extends BaseController
     {
         $this->requireRole('super_admin', 'admin');
         $this->render('settings/index.html.twig', [
-            'active'   => 'settings',
-            'theme'    => $this->setting->get('ui_theme', 'dark'),
-            'timeout'  => $this->setting->get('query_timeout', '30'),
-            'row_limit'=> $this->setting->get('row_limit', '50'),
+            'active'          => 'settings',
+            'theme'           => $this->setting->get('ui_theme', 'dark'),
+            'query_timeout'   => $this->setting->get('query_timeout', '30'),
+            'row_limit'       => $this->setting->get('row_limit', '50'),
+            'session_timeout' => $this->setting->get('session_timeout', '60'),
         ]);
     }
 
     public function update(): void
     {
         $this->requireRole('super_admin', 'admin');
-        $this->setting->set('ui_theme',      $_POST['ui_theme']    ?? 'dark');
-        $this->setting->set('query_timeout', $_POST['query_timeout'] ?? '30');
-        $this->setting->set('row_limit',     $_POST['row_limit']   ?? '50');
+        $this->setting->set('ui_theme',        $_POST['ui_theme']        ?? 'dark');
+        $this->setting->set('query_timeout',    $_POST['query_timeout']   ?? '30');
+        $this->setting->set('row_limit',        $_POST['row_limit']       ?? '50');
+        $this->setting->set('session_timeout',  $_POST['session_timeout'] ?? '60');
         $_SESSION['flash_success'] = 'Settings saved.';
         $this->redirect('/settings');
     }

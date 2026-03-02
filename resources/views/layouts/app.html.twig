@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/assets/css/app.css">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed{% if session.theme == 'light' %} pm-light{% endif %}">
 <div class="wrapper">
 
     <!-- Navbar -->
@@ -28,6 +28,11 @@
             </li>
         </ul>
         <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm nav-link" id="theme-toggle" title="Toggle light/dark mode" style="border:none;background:none;padding:.4rem .6rem;">
+                    <i class="fas {% if session.theme == 'light' %}fa-moon{% else %}fa-sun{% endif %}" style="color:#ddd;"></i>
+                </button>
+            </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">
                     <i class="fas fa-user-circle mr-1"></i>
@@ -163,6 +168,8 @@
                     <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                 </div>
                 {% endif %}
+                {# Clear flash messages so they don't re-appear on reload #}
+                <script>fetch('/flash/clear',{method:'POST'});</script>
 
                 {% block content %}{% endblock %}
             </div>
@@ -170,9 +177,9 @@
     </div>
 
     <!-- Footer -->
-    <footer class="main-footer">
-        <strong>PostgreManager</strong> &copy; {{ "now"|date("Y") }}
-        <div class="float-right">PHP 8.4 | FlightPHP | AdminLTE</div>
+    <footer class="main-footer" style="background:#16213e; border-top:1px solid #0f3460; color:#aaa;">
+        <strong style="color:#ddd;">PostgreManager</strong> &copy; {{ "now"|date("Y") }}
+        <div class="float-right" style="color:#666;">PHP 8.4 | FlightPHP | AdminLTE</div>
     </footer>
 </div>
 

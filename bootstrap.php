@@ -63,5 +63,18 @@ session_start();
 $twig->addGlobal('session', $_SESSION);
 $twig->addGlobal('app_name', 'PostgreManager');
 
+// ── Load app settings from DB into globals ────────────────────────────────
+try {
+    $theme          = $pdo->query("SELECT value FROM pm_settings WHERE key='ui_theme'")->fetchColumn() ?: 'dark';
+    $sessionTimeout = (int) ($pdo->query("SELECT value FROM pm_settings WHERE key='session_timeout'")->fetchColumn() ?: 60);
+} catch (\Throwable) {
+    $theme = 'dark';
+    $sessionTimeout = 60;
+}
+$_SESSION['theme'] = $theme;
+Flight::set('session_timeout', $sessionTimeout);
+// Re-add globals so theme is available in Twig
+$twig->addGlobal('session', $_SESSION);
+
 // ── Routes ────────────────────────────────────────────────────────────────
 require __DIR__ . '/routes/web.php';
