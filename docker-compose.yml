@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     networks:
-      - pgm_net
+      - ovhgra1
     command: >
       sh -c "
         apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev -q &&
