@@ -91,7 +91,13 @@
                         <td>{{ t.table }}</td>
                         <td><span class="badge badge-secondary">{{ t.total_size }}</span></td>
                         <td>{{ t.rows|number_format }}</td>
-                        <td>{{ t.dead_rows > 0 ? '<span class="text-warning">' ~ t.dead_rows ~ '</span>'|raw : '0' }}</td>
+                        <td>
+                            {% if t.dead_rows > 0 %}
+                                <span class="text-warning">{{ t.dead_rows }}</span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                     </tbody>
