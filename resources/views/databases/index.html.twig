@@ -38,6 +38,10 @@
                     <a href="/databases/{{ db.name }}/import?server_id={{ server_id }}" class="btn btn-xs btn-outline-warning" title="Import">
                         <i class="fas fa-upload"></i>
                     </a>
+                    <button class="btn btn-xs btn-outline-danger" title="Truncate"
+                        onclick="confirmTruncate('{{ db.name }}', '/databases/{{ db.name }}/truncate')">
+                        <i class="fas fa-eraser"></i>
+                    </button>
                     <button class="btn btn-xs btn-outline-danger" title="Drop"
                         onclick="confirmDrop('{{ db.name }}', '/databases/{{ db.name }}/drop', 'database')">
                         <i class="fas fa-trash"></i>
@@ -63,6 +67,14 @@
 <script>
 function confirmDrop(name, url, type) {
     if (confirm('Drop ' + type + ' "' + name + '"? This cannot be undone!')) {
+        const form = document.getElementById('drop-form');
+        form.action = url;
+        form.submit();
+    }
+}
+
+function confirmTruncate(name, url) {
+    if (confirm('Truncate database "' + name + '"? All tables will be dropped and data will be lost!')) {
         const form = document.getElementById('drop-form');
         form.action = url;
         form.submit();

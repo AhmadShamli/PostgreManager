@@ -55,6 +55,18 @@ class DatabaseController extends PgBaseController
         $this->redirect('/databases?server_id=' . $this->serverId);
     }
 
+    public function truncate(string $name): void
+    {
+        $this->resolvePg($name);
+        try {
+            $this->pg->truncateDatabase();
+            $_SESSION['flash_success'] = "Database \"{$name}\" truncated (all tables dropped).";
+        } catch (\Exception $e) {
+            $_SESSION['flash_error'] = $e->getMessage();
+        }
+        $this->redirect('/databases?server_id=' . $this->serverId);
+    }
+
     public function export(string $name): void
     {
         $this->requireAuth();

@@ -46,6 +46,7 @@ Flight::route('GET /databases',               [DatabaseController::class, 'index
 Flight::route('GET /databases/create',        [DatabaseController::class, 'create']);
 Flight::route('POST /databases',              [DatabaseController::class, 'store']);
 Flight::route('POST /databases/@name/drop',   [DatabaseController::class, 'drop']);
+Flight::route('POST /databases/@name/truncate', [DatabaseController::class, 'truncate']);
 Flight::route('GET /databases/@name/export',  [DatabaseController::class, 'export']);
 Flight::route('GET /databases/@name/import',  [DatabaseController::class, 'importForm']);
 Flight::route('POST /databases/@name/import', [DatabaseController::class, 'import']);

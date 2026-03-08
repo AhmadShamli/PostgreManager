@@ -94,6 +94,29 @@ class PgService
         $this->conn->exec("DROP DATABASE IF EXISTS " . $this->quoteName($name));
     }
 
+    /**
+     * Truncate a database by dropping all user tables.
+     * This effectively empties the database while keeping its structure.
+     */
+    public function truncateDatabase(): void
+    {
+        // Get all tables in all non-system schemas
+        $tables = $this->conn->query(
+            "SELECT table_schema, table_name
+             FROM information_schema.tables
+             WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+             AND table_type = 'BASE TABLE'
+             ORDER BY table_schema, table_name"
+        )->fetchAll();
+
+        // Drop each table with CASCADE to handle dependencies
+        foreach ($tables as $table) {
+            $schema = $this->quoteName($table['table_schema']);
+            $name = $this->quoteName($table['table_name']);
+            $this->conn->exec("DROP TABLE IF EXISTS {$schema}.{$name} CASCADE");
+        }
+    }
+
     public function totalDatabaseSize(): string
     {
         return $this->conn->query(
