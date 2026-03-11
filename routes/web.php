@@ -47,6 +47,9 @@ Flight::route('GET /databases/create',        [DatabaseController::class, 'creat
 Flight::route('POST /databases',              [DatabaseController::class, 'store']);
 Flight::route('POST /databases/@name/drop',   [DatabaseController::class, 'drop']);
 Flight::route('POST /databases/@name/truncate', [DatabaseController::class, 'truncate']);
+Flight::route('POST /databases/@name/recreate', [DatabaseController::class, 'recreate']);
+Flight::route('POST /databases/@name/lock', [DatabaseController::class, 'lock']);
+Flight::route('POST /databases/@name/unlock', [DatabaseController::class, 'unlock']);
 Flight::route('GET /databases/@name/export',  [DatabaseController::class, 'export']);
 Flight::route('GET /databases/@name/import',  [DatabaseController::class, 'importForm']);
 Flight::route('POST /databases/@name/import', [DatabaseController::class, 'import']);
@@ -117,5 +120,3 @@ Flight::route('POST /flash/clear', function () {
     unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     Flight::json(['ok' => true]);
 });
-
-

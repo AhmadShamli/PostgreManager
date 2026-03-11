@@ -1,5 +1,5 @@
 {% extends 'layouts/app.html.twig' %}
-{% block title %}{{ table }} Data — PostgreManager{% endblock %}
+{% block title %}{{ table }} Data - PostgreManager{% endblock %}
 {% block page_title %}Data: {{ schema }}.{{ table }}{% endblock %}
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/databases?server_id={{ server_id }}">Databases</a></li>
@@ -10,8 +10,11 @@
 {% block content %}
 <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
     <div class="card-header d-flex justify-content-between align-items-center" style="background:#16213e; border-bottom:1px solid #0f3460;">
-        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-search mr-2"></i>{{ data.total|number_format }} rows — Page {{ data.page }}</h3>
+        <h3 class="card-title mb-0" style="color:#e94560;"><i class="fas fa-search mr-2"></i>{{ data.total|number_format }} rows - Page {{ data.page }}</h3>
         <div>
+            {% if is_locked %}
+            <span class="badge badge-danger mr-2"><i class="fas fa-lock mr-1"></i>Database locked</span>
+            {% endif %}
             <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ table }}/export?server_id={{ server_id }}&format=csv" class="btn btn-xs btn-outline-success mr-1"><i class="fas fa-file-csv mr-1"></i>CSV</a>
             <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ table }}/export?server_id={{ server_id }}&format=json" class="btn btn-xs btn-outline-info"><i class="fas fa-file-code mr-1"></i>JSON</a>
         </div>
@@ -38,13 +41,14 @@
                 {% endfor %}
                 <td>
                     <button class="btn btn-xs btn-outline-danger"
-                        onclick="if(confirm('Delete this row?'))document.getElementById('del-{{ loop.index }}').submit()">
+                        onclick="submitRowDelete('del-{{ loop.index }}', {{ is_locked ? 'true' : 'false' }})">
                         <i class="fas fa-trash"></i>
                     </button>
                     <form id="del-{{ loop.index }}" method="POST"
                         action="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ table }}/data/{{ row.ctid ?? loop.index }}/delete"
                         style="display:none;">
                         <input type="hidden" name="server_id" value="{{ server_id }}">
+                        <input type="hidden" name="confirmation" value="">
                     </form>
                 </td>
             </tr>
@@ -53,7 +57,6 @@
         </table>
         </div>
 
-        <!-- Pagination -->
         <div class="p-3 d-flex justify-content-between align-items-center" style="border-top:1px solid #0f3460;">
             <span style="color:#aaa;">{{ data.total|number_format }} total rows</span>
             <div>
@@ -75,4 +78,28 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function submitRowDelete(formId, isLocked) {
+    if (!confirm('Delete this row?')) {
+        return;
+    }
+
+    const form = document.getElementById(formId);
+    form.querySelector('input[name="confirmation"]').value = '';
+
+    if (isLocked) {
+        const typed = prompt('This database is locked. Type DELETE to continue.');
+        if (typed !== 'DELETE') {
+            alert('Confirmation did not match. Action cancelled.');
+            return;
+        }
+        form.querySelector('input[name="confirmation"]').value = typed;
+    }
+
+    form.submit();
+}
+</script>
 {% endblock %}

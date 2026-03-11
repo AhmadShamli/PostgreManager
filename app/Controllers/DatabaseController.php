@@ -11,9 +11,17 @@ class DatabaseController extends PgBaseController
     public function index(): void
     {
         $this->resolvePg();
+        $databases = $this->pg->listDatabases();
+        $locks = $this->databaseLock->getByServer($this->serverId);
+
+        foreach ($databases as &$database) {
+            $database['is_locked'] = $locks[$database['name']] ?? false;
+        }
+        unset($database);
+
         $this->render('databases/index.html.twig', [
             'active'    => 'databases',
-            'databases' => $this->pg->listDatabases(),
+            'databases' => $databases,
             'server_id' => $this->serverId,
         ]);
     }
@@ -47,6 +55,7 @@ class DatabaseController extends PgBaseController
     {
         $this->resolvePg();
         try {
+            $this->requireDatabaseConfirmation($name, 'DROP');
             $this->pg->dropDatabase($name);
             $_SESSION['flash_success'] = "Database \"{$name}\" dropped.";
         } catch (\Exception $e) {
@@ -59,11 +68,48 @@ class DatabaseController extends PgBaseController
     {
         $this->resolvePg($name);
         try {
+            $this->requireDatabaseConfirmation($name, 'TRUNCATE');
             $this->pg->truncateDatabase();
-            $_SESSION['flash_success'] = "Database \"{$name}\" truncated (all tables dropped).";
+            $_SESSION['flash_success'] = "Database \"{$name}\" reset to an empty default state.";
         } catch (\Exception $e) {
             $_SESSION['flash_error'] = $e->getMessage();
         }
+        $this->redirect('/databases?server_id=' . $this->serverId);
+    }
+
+    public function recreate(string $name): void
+    {
+        $this->resolvePg();
+        try {
+            $this->requireDatabaseConfirmation($name, 'RECREATE');
+            $this->pg->recreateDatabase($name);
+            $_SESSION['flash_success'] = "Database \"{$name}\" recreated with its previous owner preserved.";
+        } catch (\Exception $e) {
+            $_SESSION['flash_error'] = $e->getMessage();
+        }
+        $this->redirect('/databases?server_id=' . $this->serverId);
+    }
+
+    public function lock(string $name): void
+    {
+        $this->resolvePg();
+        $this->databaseLock->setLocked($this->serverId, $name, true);
+        $_SESSION['flash_success'] = "Database \"{$name}\" locked.";
+        $this->redirect('/databases?server_id=' . $this->serverId);
+    }
+
+    public function unlock(string $name): void
+    {
+        $this->resolvePg();
+        $confirmation = trim((string) ($_POST['confirmation'] ?? ''));
+        if ($confirmation !== 'UNLOCK') {
+            $_SESSION['flash_error'] = "Database \"{$name}\" is locked. Type UNLOCK to remove protection.";
+            $this->redirect('/databases?server_id=' . $this->serverId);
+            return;
+        }
+
+        $this->databaseLock->setLocked($this->serverId, $name, false);
+        $_SESSION['flash_success'] = "Database \"{$name}\" unlocked.";
         $this->redirect('/databases?server_id=' . $this->serverId);
     }
 

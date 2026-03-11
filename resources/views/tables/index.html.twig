@@ -11,6 +11,9 @@
 <div class="card" style="background:#1a1a2e; border:1px solid #0f3460;">
     <div class="card-header" style="background:#16213e; border-bottom:1px solid #0f3460;">
         <h3 class="card-title" style="color:#e94560;"><i class="fas fa-table mr-2"></i>Tables in <code style="color:#17a2b8;">{{ schema }}</code></h3>
+        {% if is_locked %}
+        <span class="badge badge-danger float-right"><i class="fas fa-lock mr-1"></i>Database locked</span>
+        {% endif %}
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -31,11 +34,12 @@
                     <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}?server_id={{ server_id }}" class="btn btn-xs btn-outline-secondary" title="Structure"><i class="fas fa-columns"></i></a>
                     <a href="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}/export?server_id={{ server_id }}&format=csv" class="btn btn-xs btn-outline-success" title="Export CSV"><i class="fas fa-file-csv"></i></a>
                     <button class="btn btn-xs btn-outline-danger" title="Drop"
-                        onclick="if(confirm('Drop table {{ t.name }}?'))document.getElementById('drop-{{ t.name }}').submit()">
+                        onclick="submitTableDrop('{{ t.name }}', 'drop-{{ t.name }}', {{ is_locked ? 'true' : 'false' }})">
                         <i class="fas fa-trash"></i>
                     </button>
                     <form id="drop-{{ t.name }}" method="POST" action="/databases/{{ db }}/schemas/{{ schema }}/tables/{{ t.name }}/drop" style="display:none;">
                         <input type="hidden" name="server_id" value="{{ server_id }}">
+                        <input type="hidden" name="confirmation" value="">
                     </form>
                 </td>
             </tr>
@@ -47,4 +51,28 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function submitTableDrop(tableName, formId, isLocked) {
+    if (!confirm('Drop table "' + tableName + '"?')) {
+        return;
+    }
+
+    const form = document.getElementById(formId);
+    form.querySelector('input[name="confirmation"]').value = '';
+
+    if (isLocked) {
+        const typed = prompt('This database is locked. Type DROP to continue.');
+        if (typed !== 'DROP') {
+            alert('Confirmation did not match. Action cancelled.');
+            return;
+        }
+        form.querySelector('input[name="confirmation"]').value = typed;
+    }
+
+    form.submit();
+}
+</script>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'layouts/app.html.twig' %}
-{% block title %}Databases — PostgreManager{% endblock %}
+{% block title %}Databases - PostgreManager{% endblock %}
 {% block page_title %}Databases{% endblock %}
 {% block breadcrumb %}<li class="breadcrumb-item active">Databases</li>{% endblock %}
 
@@ -16,7 +16,7 @@
         <table class="table table-hover mb-0" style="color:#ddd;">
             <thead style="background:#0f3460;">
                 <tr>
-                    <th>Name</th><th>Owner</th><th>Size</th><th>Connection Limit</th><th>Collation</th><th>Actions</th>
+                    <th>Name</th><th>Owner</th><th>Size</th><th>Connection Limit</th><th>Collation</th><th>Status</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -32,24 +32,46 @@
                 <td>{{ db.conn_limit == -1 ? '∞' : db.conn_limit }}</td>
                 <td>{{ db.collation }}</td>
                 <td>
+                    {% if db.is_locked %}
+                    <span class="badge badge-danger"><i class="fas fa-lock mr-1"></i>Locked</span>
+                    {% else %}
+                    <span class="badge badge-secondary"><i class="fas fa-lock-open mr-1"></i>Unlocked</span>
+                    {% endif %}
+                </td>
+                <td>
                     <a href="/databases/{{ db.name }}/export?server_id={{ server_id }}" class="btn btn-xs btn-outline-info" title="Export">
                         <i class="fas fa-download"></i>
                     </a>
                     <a href="/databases/{{ db.name }}/import?server_id={{ server_id }}" class="btn btn-xs btn-outline-warning" title="Import">
                         <i class="fas fa-upload"></i>
                     </a>
+                    {% if db.is_locked %}
+                    <button class="btn btn-xs btn-outline-secondary" title="Unlock"
+                        onclick="submitDatabaseAction('{{ db.name }}', '/databases/{{ db.name }}/unlock', true, 'UNLOCK', 'Unlock database')">
+                        <i class="fas fa-lock-open"></i>
+                    </button>
+                    {% else %}
+                    <button class="btn btn-xs btn-outline-secondary" title="Lock"
+                        onclick="submitDatabaseAction('{{ db.name }}', '/databases/{{ db.name }}/lock', false, '', 'Lock database')">
+                        <i class="fas fa-lock"></i>
+                    </button>
+                    {% endif %}
                     <button class="btn btn-xs btn-outline-danger" title="Truncate"
-                        onclick="confirmTruncate('{{ db.name }}', '/databases/{{ db.name }}/truncate')">
+                        onclick="submitDatabaseAction('{{ db.name }}', '/databases/{{ db.name }}/truncate', {{ db.is_locked ? 'true' : 'false' }}, 'TRUNCATE', 'Reset database objects')">
                         <i class="fas fa-eraser"></i>
                     </button>
+                    <button class="btn btn-xs btn-outline-warning" title="Recreate"
+                        onclick="submitDatabaseAction('{{ db.name }}', '/databases/{{ db.name }}/recreate', {{ db.is_locked ? 'true' : 'false' }}, 'RECREATE', 'Recreate database')">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                     <button class="btn btn-xs btn-outline-danger" title="Drop"
-                        onclick="confirmDrop('{{ db.name }}', '/databases/{{ db.name }}/drop', 'database')">
+                        onclick="submitDatabaseAction('{{ db.name }}', '/databases/{{ db.name }}/drop', {{ db.is_locked ? 'true' : 'false' }}, 'DROP', 'Drop database')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center p-4" style="color:#555;">No databases found.</td></tr>
+            <tr><td colspan="7" class="text-center p-4" style="color:#555;">No databases found.</td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -57,28 +79,34 @@
     </div>
 </div>
 
-<!-- Hidden drop form -->
-<form id="drop-form" method="POST" style="display:none;">
+<form id="database-action-form" method="POST" style="display:none;">
     <input type="hidden" name="server_id" value="{{ server_id }}">
+    <input type="hidden" name="confirmation" id="database-action-confirmation" value="">
 </form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function confirmDrop(name, url, type) {
-    if (confirm('Drop ' + type + ' "' + name + '"? This cannot be undone!')) {
-        const form = document.getElementById('drop-form');
-        form.action = url;
-        form.submit();
-    }
-}
+function submitDatabaseAction(name, url, isLocked, confirmationWord, actionLabel) {
+    const form = document.getElementById('database-action-form');
+    const confirmation = document.getElementById('database-action-confirmation');
 
-function confirmTruncate(name, url) {
-    if (confirm('Truncate database "' + name + '"? All tables will be dropped and data will be lost!')) {
-        const form = document.getElementById('drop-form');
-        form.action = url;
-        form.submit();
+    if (!confirm(actionLabel + ' "' + name + '"?')) {
+        return;
     }
+
+    confirmation.value = '';
+    if (isLocked) {
+        const typed = prompt('Database "' + name + '" is locked. Type ' + confirmationWord + ' to continue.');
+        if (typed !== confirmationWord) {
+            alert('Confirmation did not match. Action cancelled.');
+            return;
+        }
+        confirmation.value = typed;
+    }
+
+    form.action = url;
+    form.submit();
 }
 </script>
 {% endblock %}

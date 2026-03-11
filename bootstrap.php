@@ -37,6 +37,18 @@ if ($isNewDb) {
     $pdo->exec($schema);
 }
 
+$pdo->exec(
+    "CREATE TABLE IF NOT EXISTS pm_database_locks (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id     INTEGER NOT NULL REFERENCES pm_server_profiles(id) ON DELETE CASCADE,
+        database_name TEXT NOT NULL,
+        is_locked     INTEGER NOT NULL DEFAULT 1,
+        created_at    TEXT DEFAULT (datetime('now')),
+        updated_at    TEXT DEFAULT (datetime('now')),
+        UNIQUE(server_id, database_name)
+    )"
+);
+
 Flight::map('db', fn() => $pdo);
 Flight::set('db_ready', true);
 

@@ -11,6 +11,7 @@ use PostgreManager\Models\ServerProfile;
 class PgService
 {
     private ?PDO $conn = null;
+    private array $activeProfile = [];
 
     public function __construct(private ServerProfile $profileModel) {}
 
@@ -24,20 +25,60 @@ class PgService
             throw new \RuntimeException("Server profile #{$profileId} not found.");
         }
 
+        $this->activeProfile = $profile;
         $db  = $dbName ?: $profile['db_name'];
-        $dsn = "pgsql:host={$profile['host']};port={$profile['port']};dbname={$db}";
-
-        $this->conn = new PDO(
-            $dsn,
-            $profile['pg_username'],
-            $this->profileModel->decryptPassword($profile['pg_password_enc']),
-            [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_TIMEOUT            => 10,
-            ]
-        );
+        $this->conn = $this->createPdo($profile, $db);
         return $this->conn;
+    }
+
+    public function recreateDatabase(string $name): void
+    {
+        if (!$this->activeProfile) {
+            throw new \RuntimeException('No active profile. Call connect() first.');
+        }
+
+        $maintenanceDb = $this->pickMaintenanceDatabase($name);
+        $maintenance   = $this->createPdo($this->activeProfile, $maintenanceDb);
+
+        $stmt = $maintenance->prepare(
+            "SELECT pg_catalog.pg_get_userbyid(datdba) AS owner,
+                    pg_encoding_to_char(encoding) AS encoding,
+                    datcollate AS lc_collate,
+                    datctype AS lc_ctype,
+                    datconnlimit AS conn_limit
+             FROM pg_catalog.pg_database
+             WHERE datname = :name"
+        );
+        $stmt->execute([':name' => $name]);
+        $database = $stmt->fetch();
+
+        if (!$database) {
+            throw new \RuntimeException("Database \"{$name}\" not found.");
+        }
+
+        $maintenance->prepare(
+            "SELECT pg_terminate_backend(pid)
+             FROM pg_stat_activity
+             WHERE datname = :name AND pid <> pg_backend_pid()"
+        )->execute([':name' => $name]);
+
+        try {
+            $maintenance->exec('DROP DATABASE IF EXISTS ' . $this->quoteName($name) . ' WITH (FORCE)');
+        } catch (PDOException) {
+            $maintenance->exec('DROP DATABASE IF EXISTS ' . $this->quoteName($name));
+        }
+
+        $sql = sprintf(
+            'CREATE DATABASE %s WITH OWNER %s ENCODING %s LC_COLLATE %s LC_CTYPE %s TEMPLATE template0 CONNECTION LIMIT %d',
+            $this->quoteName($name),
+            $this->quoteName($database['owner']),
+            $maintenance->quote($database['encoding']),
+            $maintenance->quote($database['lc_collate']),
+            $maintenance->quote($database['lc_ctype']),
+            (int) $database['conn_limit']
+        );
+
+        $maintenance->exec($sql);
     }
 
     public function getConnection(): PDO
@@ -95,25 +136,84 @@ class PgService
     }
 
     /**
-     * Truncate a database by dropping all user tables.
-     * This effectively empties the database while keeping its structure.
+     * Remove user-created objects so the database is close to a fresh create.
+     * Keeps the default public schema in place.
      */
     public function truncateDatabase(): void
     {
-        // Get all tables in all non-system schemas
-        $tables = $this->conn->query(
-            "SELECT table_schema, table_name
-             FROM information_schema.tables
-             WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-             AND table_type = 'BASE TABLE'
-             ORDER BY table_schema, table_name"
-        )->fetchAll();
+        $this->conn->beginTransaction();
 
-        // Drop each table with CASCADE to handle dependencies
-        foreach ($tables as $table) {
-            $schema = $this->quoteName($table['table_schema']);
-            $name = $this->quoteName($table['table_name']);
-            $this->conn->exec("DROP TABLE IF EXISTS {$schema}.{$name} CASCADE");
+        try {
+            $schemas = $this->conn->query(
+                "SELECT schema_name
+                 FROM information_schema.schemata
+                 WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'public')
+                 ORDER BY schema_name"
+            )->fetchAll();
+
+            foreach ($schemas as $schema) {
+                $this->conn->exec('DROP SCHEMA IF EXISTS ' . $this->quoteName($schema['schema_name']) . ' CASCADE');
+            }
+
+            $objects = $this->conn->query(
+                "SELECT c.relname AS name, c.relkind
+                 FROM pg_class c
+                 JOIN pg_namespace n ON n.oid = c.relnamespace
+                 WHERE n.nspname = 'public'
+                 AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+                 ORDER BY c.relname"
+            )->fetchAll();
+
+            foreach ($objects as $object) {
+                $qualifiedName = $this->quoteName('public') . '.' . $this->quoteName($object['name']);
+                $command = match ($object['relkind']) {
+                    'r', 'p' => 'DROP TABLE IF EXISTS ',
+                    'v'      => 'DROP VIEW IF EXISTS ',
+                    'm'      => 'DROP MATERIALIZED VIEW IF EXISTS ',
+                    'S'      => 'DROP SEQUENCE IF EXISTS ',
+                    'f'      => 'DROP FOREIGN TABLE IF EXISTS ',
+                    default  => null,
+                };
+
+                if ($command !== null) {
+                    $this->conn->exec($command . $qualifiedName . ' CASCADE');
+                }
+            }
+
+            $routines = $this->conn->query(
+                "SELECT p.proname AS name,
+                        pg_get_function_identity_arguments(p.oid) AS identity_args,
+                        p.prokind
+                 FROM pg_proc p
+                 JOIN pg_namespace n ON n.oid = p.pronamespace
+                 WHERE n.nspname = 'public'
+                 ORDER BY p.proname"
+            )->fetchAll();
+
+            foreach ($routines as $routine) {
+                $kind = $routine['prokind'] === 'p' ? 'PROCEDURE' : 'FUNCTION';
+                $signature = $this->quoteName('public') . '.' . $this->quoteName($routine['name']) . '(' . $routine['identity_args'] . ')';
+                $this->conn->exec("DROP {$kind} IF EXISTS {$signature} CASCADE");
+            }
+
+            $types = $this->conn->query(
+                "SELECT t.typname AS name
+                 FROM pg_type t
+                 JOIN pg_namespace n ON n.oid = t.typnamespace
+                 WHERE n.nspname = 'public'
+                 AND t.typtype IN ('d', 'e')
+                 ORDER BY t.typname"
+            )->fetchAll();
+
+            foreach ($types as $type) {
+                $this->conn->exec('DROP TYPE IF EXISTS ' . $this->quoteName('public') . '.' . $this->quoteName($type['name']) . ' CASCADE');
+            }
+
+            $this->conn->exec('CREATE SCHEMA IF NOT EXISTS public');
+            $this->conn->commit();
+        } catch (\Throwable $e) {
+            $this->conn->rollBack();
+            throw $e;
         }
     }
 
@@ -333,5 +433,40 @@ class PgService
     private function quoteName(string $name): string
     {
         return '"' . str_replace('"', '""', $name) . '"';
+    }
+
+    private function createPdo(array $profile, string $dbName): PDO
+    {
+        $dsn = "pgsql:host={$profile['host']};port={$profile['port']};dbname={$dbName}";
+
+        return new PDO(
+            $dsn,
+            $profile['pg_username'],
+            $this->profileModel->decryptPassword($profile['pg_password_enc']),
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_TIMEOUT            => 10,
+            ]
+        );
+    }
+
+    private function pickMaintenanceDatabase(string $targetDb): string
+    {
+        foreach (['postgres', 'template1', $this->activeProfile['db_name'] ?? ''] as $candidate) {
+            if ($candidate === '' || $candidate === $targetDb) {
+                continue;
+            }
+
+            try {
+                $pdo = $this->createPdo($this->activeProfile, $candidate);
+                $pdo = null;
+                return $candidate;
+            } catch (PDOException) {
+                continue;
+            }
+        }
+
+        throw new \RuntimeException('Unable to connect to a maintenance database for recreate.');
     }
 }

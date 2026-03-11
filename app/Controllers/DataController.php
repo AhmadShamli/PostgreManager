@@ -18,6 +18,7 @@ class DataController extends PgBaseController
             'schema'    => $schema,
             'table'     => $table,
             'data'      => $data,
+            'is_locked' => $this->isDatabaseLocked($db),
             'server_id' => $this->serverId,
         ]);
     }
@@ -69,8 +70,13 @@ class DataController extends PgBaseController
     public function delete(string $db, string $schema, string $table, string $rowid): void
     {
         $this->resolvePg($db);
-        $this->pg->getConnection()->prepare('DELETE FROM "' . $schema . '"."' . $table . '" WHERE ctid = ?::tid')->execute([$rowid]);
-        $_SESSION['flash_success'] = 'Row deleted.';
+        try {
+            $this->requireDatabaseConfirmation($db, 'DELETE');
+            $this->pg->getConnection()->prepare('DELETE FROM "' . $schema . '"."' . $table . '" WHERE ctid = ?::tid')->execute([$rowid]);
+            $_SESSION['flash_success'] = 'Row deleted.';
+        } catch (\Exception $e) {
+            $_SESSION['flash_error'] = $e->getMessage();
+        }
         $this->redirect("/databases/{$db}/schemas/{$schema}/tables/{$table}/data?server_id=" . $this->serverId);
     }
 

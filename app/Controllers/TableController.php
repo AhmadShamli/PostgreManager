@@ -14,6 +14,7 @@ class TableController extends PgBaseController
             'db'        => $db,
             'schema'    => $schema,
             'tables'    => $this->pg->listTables($schema),
+            'is_locked' => $this->isDatabaseLocked($db),
             'server_id' => $this->serverId,
         ]);
     }
@@ -28,6 +29,7 @@ class TableController extends PgBaseController
             'table'     => $table,
             'columns'   => $this->pg->tableColumns($schema, $table),
             'indexes'   => $this->pg->tableIndexes($schema, $table),
+            'is_locked' => $this->isDatabaseLocked($db),
             'server_id' => $this->serverId,
         ]);
     }
@@ -37,6 +39,7 @@ class TableController extends PgBaseController
         $this->resolvePg($db);
         $cascade = isset($_POST['cascade']);
         try {
+            $this->requireDatabaseConfirmation($db, 'DROP');
             $this->pg->dropTable($schema, $table, $cascade);
             $_SESSION['flash_success'] = "Table \"{$schema}.{$table}\" dropped.";
         } catch (\Exception $e) {
