@@ -117,11 +117,10 @@ class DatabaseController extends PgBaseController
         $filename = $name . '_' . date('Ymd_His') . '.sql';
 
         try {
-            $dump = $this->pg->exportDatabase($name);
             header('Content-Type: application/sql');
             header("Content-Disposition: attachment; filename=\"{$filename}\"");
-            header('Content-Length: ' . strlen($dump));
-            echo $dump;
+            header('X-Accel-Buffering: no');
+            $this->pg->streamDatabaseExport($name);
         } catch (\Throwable $e) {
             $_SESSION['flash_error'] = 'Export failed: ' . $e->getMessage();
             $this->redirect('/databases?server_id=' . $this->serverId);

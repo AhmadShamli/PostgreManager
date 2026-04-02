@@ -43,11 +43,10 @@ class MaintenanceController extends PgBaseController
         $filename = $dbName . '_backup_' . date('Ymd_His') . '.sql';
 
         try {
-            $dump = $this->pg->exportDatabase($dbName);
             header('Content-Type: application/sql');
             header("Content-Disposition: attachment; filename=\"{$filename}\"");
-            header('Content-Length: ' . strlen($dump));
-            echo $dump;
+            header('X-Accel-Buffering: no');
+            $this->pg->streamDatabaseExport($dbName);
         } catch (\Throwable $e) {
             $_SESSION['flash_error'] = 'Backup failed: ' . $e->getMessage();
             $this->redirect('/maintenance?server_id=' . $this->serverId);

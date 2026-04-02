@@ -92,21 +92,15 @@ class PgService
         return $this->conn;
     }
 
-    public function exportDatabase(string $name): string
+    public function streamDatabaseExport(string $name): void
     {
-        $result = $this->runClientCommand('pg_dump', [
+        $this->streamClientCommand('pg_dump', [
             '--no-password',
             '-h', (string) ($this->activeProfile['host'] ?? ''),
             '-p', (string) ($this->activeProfile['port'] ?? 5432),
             '-U', (string) ($this->activeProfile['pg_username'] ?? ''),
             $name,
         ]);
-
-        if ($result['stdout'] === '') {
-            throw new \RuntimeException('pg_dump completed without producing any output.');
-        }
-
-        return $result['stdout'];
     }
 
     public function importSqlFile(string $name, string $filePath): void
@@ -582,6 +576,86 @@ class PgService
             'stdout' => (string) $stdout,
             'stderr' => (string) $stderr,
         ];
+    }
+
+    private function streamClientCommand(string $binary, array $args): void
+    {
+        if (!$this->activeProfile) {
+            throw new \RuntimeException('No active profile. Call connect() first.');
+        }
+
+        $resolvedBinary = $this->resolveClientBinary($binary);
+        $command = escapeshellarg($resolvedBinary);
+        foreach ($args as $arg) {
+            $command .= ' ' . escapeshellarg((string) $arg);
+        }
+
+        $stderrFile = tempnam(sys_get_temp_dir(), 'pgm_stderr_');
+        if ($stderrFile === false) {
+            throw new \RuntimeException("Failed to allocate a temporary file for {$binary} errors.");
+        }
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['file', $stderrFile, 'w'],
+        ];
+
+        $env = ['PGPASSWORD' => $this->profileModel->decryptPassword($this->activeProfile['pg_password_enc'])];
+        $process = proc_open($command, $descriptors, $pipes, null, $env);
+
+        if (!is_resource($process)) {
+            @unlink($stderrFile);
+            throw new \RuntimeException("Failed to start {$binary}.");
+        }
+
+        $bytesSent = 0;
+
+        try {
+            fclose($pipes[0]);
+
+            while (!feof($pipes[1])) {
+                $chunk = fread($pipes[1], 1024 * 1024);
+                if ($chunk === false) {
+                    throw new \RuntimeException("Failed while reading {$binary} output.");
+                }
+
+                if ($chunk === '') {
+                    continue;
+                }
+
+                $bytesSent += strlen($chunk);
+                echo $chunk;
+
+                if (function_exists('flush')) {
+                    flush();
+                }
+            }
+
+            fclose($pipes[1]);
+
+            $exitCode = proc_close($process);
+            $stderr = is_file($stderrFile) ? trim((string) file_get_contents($stderrFile)) : '';
+
+            if ($exitCode !== 0) {
+                $message = $stderr !== '' ? $stderr : "{$binary} exited with code {$exitCode}.";
+                throw new \RuntimeException($message);
+            }
+
+            if ($bytesSent === 0) {
+                throw new \RuntimeException("{$binary} completed without producing any output.");
+            }
+        } finally {
+            if (isset($pipes[1]) && is_resource($pipes[1])) {
+                fclose($pipes[1]);
+            }
+
+            if (is_resource($process)) {
+                proc_close($process);
+            }
+
+            @unlink($stderrFile);
+        }
     }
 
     private function resolveClientBinary(string $binary): string

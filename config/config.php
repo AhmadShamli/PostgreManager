@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 return [
     'app' => [
-        'env'    => $_ENV['APP_ENV']   ?? 'production',
-        'debug'  => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
-        'secret' => $_ENV['APP_SECRET'] ?? 'changeme',
+        'env'          => $_ENV['APP_ENV']   ?? 'production',
+        'debug'        => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        'secret'       => $_ENV['APP_SECRET'] ?? 'changeme',
+        'memory_limit' => trim((string) ($_ENV['APP_MEMORY_LIMIT'] ?? '256M')),
     ],
     // SQLite — app internal database (not the managed PG servers)
     'sqlite' => [

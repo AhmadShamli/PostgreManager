@@ -13,6 +13,10 @@ $dotenv->safeLoad();
 // Config
 $config = require __DIR__ . '/config/config.php';
 
+if (($config['app']['memory_limit'] ?? '') !== '') {
+    ini_set('memory_limit', (string) $config['app']['memory_limit']);
+}
+
 // ── SQLite — app internal DB ───────────────────────────────────────────────
 $sqlitePath = $config['sqlite']['path'];
 $storageDir = dirname($sqlitePath);
