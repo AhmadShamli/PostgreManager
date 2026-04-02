@@ -36,28 +36,22 @@ class MaintenanceController extends PgBaseController
 
     public function backup(): void
     {
-        $this->requireAuth();
-        $serverId = (int) ($_POST['server_id'] ?? $_SESSION['active_server_id'] ?? 0);
-        $dbName   = $_POST['db'] ?? '';
-        $profile  = (new \PostgreManager\Models\ServerProfile($this->db()))->find($serverId);
+        $dbName = $_POST['db'] ?? '';
+        if (!$dbName) { Flight::halt(400, 'Missing parameters'); return; }
 
-        if (!$profile || !$dbName) { Flight::halt(400, 'Missing parameters'); return; }
-
-        $password = (new \PostgreManager\Models\ServerProfile($this->db()))->decryptPassword($profile['pg_password_enc']);
+        $this->resolvePg($dbName);
         $filename = $dbName . '_backup_' . date('Ymd_His') . '.sql';
 
-        header('Content-Type: application/sql');
-        header("Content-Disposition: attachment; filename=\"{$filename}\"");
-
-        $cmd = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %d -U %s %s',
-            escapeshellarg($password),
-            escapeshellarg($profile['host']),
-            (int) $profile['port'],
-            escapeshellarg($profile['pg_username']),
-            escapeshellarg($dbName)
-        );
-        passthru($cmd);
+        try {
+            $dump = $this->pg->exportDatabase($dbName);
+            header('Content-Type: application/sql');
+            header("Content-Disposition: attachment; filename=\"{$filename}\"");
+            header('Content-Length: ' . strlen($dump));
+            echo $dump;
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Backup failed: ' . $e->getMessage();
+            $this->redirect('/maintenance?server_id=' . $this->serverId);
+        }
     }
 
     public function logs(): void

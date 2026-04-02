@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace PostgreManager\Controllers;
 
-use Flight;
-
 class DatabaseController extends PgBaseController
 {
     public function index(): void
@@ -115,27 +113,19 @@ class DatabaseController extends PgBaseController
 
     public function export(string $name): void
     {
-        $this->requireAuth();
-        $serverId = (int) ($_GET['server_id'] ?? $_SESSION['active_server_id'] ?? 0);
-        // pg_dump must be available on the server
-        $profile   = (new \PostgreManager\Models\ServerProfile($this->db()))->find($serverId);
-        if (!$profile) { Flight::halt(404); return; }
-
-        $password = (new \PostgreManager\Models\ServerProfile($this->db()))->decryptPassword($profile['pg_password_enc']);
+        $this->resolvePg($name);
         $filename = $name . '_' . date('Ymd_His') . '.sql';
 
-        header('Content-Type: application/sql');
-        header("Content-Disposition: attachment; filename=\"{$filename}\"");
-
-        $cmd = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %d -U %s %s',
-            escapeshellarg($password),
-            escapeshellarg($profile['host']),
-            (int) $profile['port'],
-            escapeshellarg($profile['pg_username']),
-            escapeshellarg($name)
-        );
-        passthru($cmd);
+        try {
+            $dump = $this->pg->exportDatabase($name);
+            header('Content-Type: application/sql');
+            header("Content-Disposition: attachment; filename=\"{$filename}\"");
+            header('Content-Length: ' . strlen($dump));
+            echo $dump;
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Export failed: ' . $e->getMessage();
+            $this->redirect('/databases?server_id=' . $this->serverId);
+        }
     }
 
     public function importForm(string $name): void
@@ -151,19 +141,67 @@ class DatabaseController extends PgBaseController
     public function import(string $name): void
     {
         $this->resolvePg($name);
-        if (empty($_FILES['sql_file']['tmp_name'])) {
-            $_SESSION['flash_error'] = 'No file uploaded.';
-            $this->redirect("/databases/{$name}/import");
+        $file = $_FILES['sql_file'] ?? null;
+
+        if (!$file || !isset($file['error'])) {
+            $_SESSION['flash_error'] = 'No SQL file was received.';
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
             return;
         }
 
-        $sql = file_get_contents($_FILES['sql_file']['tmp_name']);
-        try {
-            $this->pg->getConnection()->exec($sql);
-            $_SESSION['flash_success'] = "SQL imported into \"{$name}\" successfully.";
-        } catch (\Exception $e) {
-            $_SESSION['flash_error'] = $e->getMessage();
+        if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+            $_SESSION['flash_error'] = 'Please choose a SQL file to import.';
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+            return;
         }
-        $this->redirect('/databases?server_id=' . $this->serverId);
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $_SESSION['flash_error'] = $this->uploadErrorMessage((int) $file['error']);
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+            return;
+        }
+
+        $tmpFile = (string) ($file['tmp_name'] ?? '');
+        if ($tmpFile === '' || !is_uploaded_file($tmpFile)) {
+            $_SESSION['flash_error'] = 'The uploaded SQL file is invalid.';
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+            return;
+        }
+
+        $originalName = trim((string) ($file['name'] ?? ''));
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if ($extension !== 'sql') {
+            $_SESSION['flash_error'] = 'Only .sql files can be imported.';
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+            return;
+        }
+
+        if (filesize($tmpFile) === 0) {
+            $_SESSION['flash_error'] = 'The uploaded SQL file is empty.';
+            $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+            return;
+        }
+
+        try {
+            $this->pg->importSqlFile($name, $tmpFile);
+            $_SESSION['flash_success'] = "SQL imported into \"{$name}\" successfully.";
+            $this->redirect('/databases?server_id=' . $this->serverId);
+            return;
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Import failed: ' . $e->getMessage();
+        }
+        $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
+    }
+
+    private function uploadErrorMessage(int $errorCode): string
+    {
+        return match ($errorCode) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'The uploaded SQL file is too large.',
+            UPLOAD_ERR_PARTIAL => 'The SQL file upload was interrupted. Please try again.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Upload failed because the server is missing a temporary directory.',
+            UPLOAD_ERR_CANT_WRITE => 'Upload failed because the server could not write the temporary file.',
+            UPLOAD_ERR_EXTENSION => 'Upload blocked by a server extension.',
+            default => 'Upload failed. Please try again.',
+        };
     }
 }

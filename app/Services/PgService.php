@@ -89,6 +89,44 @@ class PgService
         return $this->conn;
     }
 
+    public function exportDatabase(string $name): string
+    {
+        $result = $this->runClientCommand('pg_dump', [
+            '--no-password',
+            '-h', (string) ($this->activeProfile['host'] ?? ''),
+            '-p', (string) ($this->activeProfile['port'] ?? 5432),
+            '-U', (string) ($this->activeProfile['pg_username'] ?? ''),
+            $name,
+        ]);
+
+        if ($result['stdout'] === '') {
+            throw new \RuntimeException('pg_dump completed without producing any output.');
+        }
+
+        return $result['stdout'];
+    }
+
+    public function importSqlFile(string $name, string $filePath): void
+    {
+        if (!is_file($filePath) || !is_readable($filePath)) {
+            throw new \RuntimeException('Uploaded SQL file could not be read.');
+        }
+
+        if (filesize($filePath) === 0) {
+            throw new \RuntimeException('The uploaded SQL file is empty.');
+        }
+
+        $this->runClientCommand('psql', [
+            '--no-password',
+            '-v', 'ON_ERROR_STOP=1',
+            '-h', (string) ($this->activeProfile['host'] ?? ''),
+            '-p', (string) ($this->activeProfile['port'] ?? 5432),
+            '-U', (string) ($this->activeProfile['pg_username'] ?? ''),
+            '-d', $name,
+            '-f', $filePath,
+        ]);
+    }
+
     // ── Server Info ────────────────────────────────────────────────────────
     public function serverVersion(): string
     {
@@ -468,5 +506,47 @@ class PgService
         }
 
         throw new \RuntimeException('Unable to connect to a maintenance database for recreate.');
+    }
+
+    private function runClientCommand(string $binary, array $args): array
+    {
+        if (!$this->activeProfile) {
+            throw new \RuntimeException('No active profile. Call connect() first.');
+        }
+
+        $command = escapeshellcmd($binary);
+        foreach ($args as $arg) {
+            $command .= ' ' . escapeshellarg((string) $arg);
+        }
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $env = ['PGPASSWORD' => $this->profileModel->decryptPassword($this->activeProfile['pg_password_enc'])];
+        $process = proc_open($command, $descriptors, $pipes, null, $env);
+
+        if (!is_resource($process)) {
+            throw new \RuntimeException("Failed to start {$binary}.");
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+        if ($exitCode !== 0) {
+            $message = trim($stderr) !== '' ? trim($stderr) : "{$binary} exited with code {$exitCode}.";
+            throw new \RuntimeException($message);
+        }
+
+        return [
+            'stdout' => (string) $stdout,
+            'stderr' => (string) $stderr,
+        ];
     }
 }
