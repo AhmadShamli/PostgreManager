@@ -13,7 +13,7 @@ App data (users, settings, server profiles, database locks) is stored in a local
 | UI | AdminLTE 3 (via cdnjs) |
 | App DB | SQLite (auto-created on first boot) |
 | Managed DBs | PostgreSQL (any external server) |
-| Web Server | Nginx + PHP-FPM |
+| Web Server | Apache + mod_php |
 
 ## PHP Extensions Required
 
@@ -50,8 +50,8 @@ composer install
 cp .env.example .env
 # Edit APP_SECRET at minimum
 
-# 3. Configure Nginx to serve public/ as web root
-#    See nginx/default.conf for reference
+# 3. Configure your web server to serve public/ as web root
+#    The Docker setup uses Apache
 
 # 4. Visit http://yourdomain/setup
 ```
@@ -67,13 +67,12 @@ app/
   Services/        <- PgService (managed PG), AuthService
 config/            <- config.php
 database/          <- schema.sql (SQLite)
-nginx/             <- default.conf
 public/            <- Web root (index.php, assets/css, assets/js)
 resources/views/   <- Twig templates (AdminLTE-based)
 routes/            <- web.php
 storage/           <- database.sqlite, twig_cache (auto-created, gitignored)
 bootstrap.php      <- App bootstrap (SQLite init, Twig, Flight registration)
-docker-compose.yml <- app (PHP-FPM) + nginx only
+docker-compose.yml <- single Apache + PHP container
 ```
 
 ## Features
