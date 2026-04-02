@@ -569,9 +569,24 @@ class PgService
             ));
         }
 
-        $found = $this->findExecutableInPath($binary);
-        if ($found !== null) {
-            return $found;
+        $serverMajor = $this->conn instanceof PDO ? $this->serverMajorVersion() : null;
+        $candidates = $this->discoverClientBinaries($binary);
+        $selected = $this->pickBestClientBinary($binary, $candidates, $serverMajor);
+
+        if ($selected !== null) {
+            return $selected;
+        }
+
+        if ($binary === 'pg_dump' && $serverMajor !== null && $candidates !== []) {
+            throw new \RuntimeException(sprintf(
+                'No compatible %s binary was found for PostgreSQL %d. %s Install PostgreSQL %d client tools or set %s in .env to a PostgreSQL %d+ binary.',
+                $binary,
+                $serverMajor,
+                $this->describeClientCandidates($candidates),
+                $serverMajor,
+                'PG_DUMP_BINARY',
+                $serverMajor
+            ));
         }
 
         $envVar = $binary === 'pg_dump' ? 'PG_DUMP_BINARY' : 'PSQL_BINARY';
@@ -583,11 +598,27 @@ class PgService
         ));
     }
 
-    private function findExecutableInPath(string $binary): ?string
+    private function discoverClientBinaries(string $binary): array
     {
+        $candidates = [];
+
+        foreach ($this->findExecutablesInPath($binary) as $candidate) {
+            $candidates[$candidate] = $this->probeClientMajorVersion($candidate);
+        }
+
+        foreach ($this->findExecutablesInCommonLocations($binary) as $candidate) {
+            $candidates[$candidate] = $this->probeClientMajorVersion($candidate);
+        }
+
+        return $candidates;
+    }
+
+    private function findExecutablesInPath(string $binary): array
+    {
+        $matches = [];
         $path = getenv('PATH') ?: '';
         if ($path === '') {
-            return null;
+            return $matches;
         }
 
         $extensions = [''];
@@ -606,12 +637,150 @@ class PgService
             foreach ($extensions as $extension) {
                 $candidate = $dir . DIRECTORY_SEPARATOR . $binary . $extension;
                 if ($this->isExecutablePath($candidate)) {
-                    return $candidate;
+                    $matches[$candidate] = $candidate;
                 }
             }
         }
 
-        return null;
+        return array_values($matches);
+    }
+
+    private function findExecutablesInCommonLocations(string $binary): array
+    {
+        $patterns = [];
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $patterns = [
+                'C:\\Program Files\\PostgreSQL\\*\\bin\\' . $binary . '.exe',
+                'C:\\Program Files (x86)\\PostgreSQL\\*\\bin\\' . $binary . '.exe',
+            ];
+        } else {
+            $patterns = [
+                '/usr/lib/postgresql/*/bin/' . $binary,
+                '/usr/pgsql-*/bin/' . $binary,
+                '/opt/homebrew/opt/libpq/bin/' . $binary,
+                '/usr/local/opt/libpq/bin/' . $binary,
+            ];
+        }
+
+        $matches = [];
+        foreach ($patterns as $pattern) {
+            foreach (glob($pattern) ?: [] as $candidate) {
+                if ($this->isExecutablePath($candidate)) {
+                    $matches[$candidate] = $candidate;
+                }
+            }
+        }
+
+        return array_values($matches);
+    }
+
+    private function pickBestClientBinary(string $binary, array $candidates, ?int $serverMajor): ?string
+    {
+        if ($candidates === []) {
+            return null;
+        }
+
+        if ($serverMajor === null) {
+            return array_key_first($candidates);
+        }
+
+        $exact = [];
+        $newer = [];
+        $older = [];
+        $unknown = [];
+
+        foreach ($candidates as $path => $majorVersion) {
+            if ($majorVersion === null) {
+                $unknown[] = $path;
+                continue;
+            }
+
+            if ($majorVersion === $serverMajor) {
+                $exact[$path] = $majorVersion;
+                continue;
+            }
+
+            if ($majorVersion > $serverMajor) {
+                $newer[$path] = $majorVersion;
+                continue;
+            }
+
+            $older[$path] = $majorVersion;
+        }
+
+        if ($exact !== []) {
+            return array_key_first($exact);
+        }
+
+        if ($newer !== []) {
+            asort($newer, SORT_NUMERIC);
+            return array_key_first($newer);
+        }
+
+        if ($binary !== 'pg_dump' && $older !== []) {
+            arsort($older, SORT_NUMERIC);
+            return array_key_first($older);
+        }
+
+        return $unknown[0] ?? null;
+    }
+
+    private function serverMajorVersion(): ?int
+    {
+        try {
+            $versionNum = $this->conn?->query('SHOW server_version_num')->fetchColumn();
+            if ($versionNum === false) {
+                return null;
+            }
+
+            return (int) floor(((int) $versionNum) / 10000);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function probeClientMajorVersion(string $binaryPath): ?int
+    {
+        $command = escapeshellarg($binaryPath) . ' --version';
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes);
+        if (!is_resource($process)) {
+            return null;
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0) {
+            return null;
+        }
+
+        $output = trim((string) $stdout . ' ' . (string) $stderr);
+        if (!preg_match('/\b(\d+)(?:\.\d+)?\b/', $output, $matches)) {
+            return null;
+        }
+
+        return (int) $matches[1];
+    }
+
+    private function describeClientCandidates(array $candidates): string
+    {
+        $parts = [];
+        foreach ($candidates as $path => $majorVersion) {
+            $label = $majorVersion === null ? 'unknown version' : 'v' . $majorVersion;
+            $parts[] = sprintf('%s at %s.', $label, $path);
+        }
+
+        return 'Detected client binaries: ' . implode(' ', $parts);
     }
 
     private function isExecutablePath(string $path): bool

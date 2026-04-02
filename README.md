@@ -62,6 +62,7 @@ For backup/import features, the host running PHP must also have PostgreSQL clien
 
 ```bash
 # optional: set explicit client paths if pg_dump / psql are not on PATH
+POSTGRES_CLIENT_MAJOR=18
 PG_DUMP_BINARY=
 PSQL_BINARY=
 ```
@@ -69,9 +70,12 @@ PSQL_BINARY=
 Windows example:
 
 ```bash
-PG_DUMP_BINARY="C:\Program Files\PostgreSQL\17\bin\pg_dump.exe"
-PSQL_BINARY="C:\Program Files\PostgreSQL\17\bin\psql.exe"
+POSTGRES_CLIENT_MAJOR=18
+PG_DUMP_BINARY="C:\Program Files\PostgreSQL\18\bin\pg_dump.exe"
+PSQL_BINARY="C:\Program Files\PostgreSQL\18\bin\psql.exe"
 ```
+
+`pg_dump` must be the same major version as the server or newer. If multiple PostgreSQL client versions are installed, PostgreManager will prefer one that matches the connected server and avoid older incompatible binaries for exports.
 
 ## Folder Structure
 
@@ -118,5 +122,6 @@ docker-compose.yml <- single Apache + PHP container
 | `APP_ENV` | `production` | `development` or `production` |
 | `APP_DEBUG` | `false` | Enable Twig debug mode |
 | `APP_SECRET` | none | Required. Used for CSRF and encryption key |
-| `PG_DUMP_BINARY` | empty | Optional full path to `pg_dump` if it is not on the server PATH |
-| `PSQL_BINARY` | empty | Optional full path to `psql` if it is not on the server PATH |
+| `POSTGRES_CLIENT_MAJOR` | `18` | Docker only. Installs `postgresql-client-<major>` so exports work with PostgreSQL `<major>` servers and older |
+| `PG_DUMP_BINARY` | empty | Optional full path to `pg_dump` if it is not on the server PATH or if you want to pin a specific version |
+| `PSQL_BINARY` | empty | Optional full path to `psql` if it is not on the server PATH or if you want to pin a specific version |

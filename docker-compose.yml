@@ -10,11 +10,20 @@ services:
       - .:/var/www/html
     env_file:
       - .env
+    environment:
+      POSTGRES_CLIENT_MAJOR: ${POSTGRES_CLIENT_MAJOR:-18}
     networks:
       - mynetwork
     command: >
       sh -c "
-        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev postgresql-client unzip zip git curl -q &&
+        apt-get update -q &&
+        apt-get install -y curl gpg ca-certificates -q &&
+        . /etc/os-release &&
+        install -d /usr/share/postgresql-common/pgdg &&
+        curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc &&
+        echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt '"$$VERSION_CODENAME"'-pgdg main' > /etc/apt/sources.list.d/pgdg.list &&
+        apt-get update -q &&
+        apt-get install -y libpq-dev libsqlite3-dev postgresql-client-'${POSTGRES_CLIENT_MAJOR:-18}' unzip zip git -q &&
         docker-php-ext-install pdo pdo_pgsql pdo_sqlite &&
         a2enmod rewrite &&
         sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf /etc/apache2/apache2.conf &&
