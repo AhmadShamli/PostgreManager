@@ -142,6 +142,7 @@ class DatabaseController extends PgBaseController
     {
         $this->resolvePg($name);
         $file = $_FILES['sql_file'] ?? null;
+        $resetBeforeImport = isset($_POST['reset_before_import']);
 
         if (!$file || !isset($file['error'])) {
             $_SESSION['flash_error'] = 'No SQL file was received.';
@@ -183,12 +184,26 @@ class DatabaseController extends PgBaseController
         }
 
         try {
+            if ($resetBeforeImport) {
+                $this->pg->truncateDatabase();
+            }
+
             $this->pg->importSqlFile($name, $tmpFile);
-            $_SESSION['flash_success'] = "SQL imported into \"{$name}\" successfully.";
+            $_SESSION['flash_success'] = $resetBeforeImport
+                ? "Database \"{$name}\" was reset and the SQL import completed successfully."
+                : "SQL imported into \"{$name}\" successfully.";
             $this->redirect('/databases?server_id=' . $this->serverId);
             return;
         } catch (\Throwable $e) {
-            $_SESSION['flash_error'] = 'Import failed: ' . $e->getMessage();
+            $message = $e->getMessage();
+            if (
+                !$resetBeforeImport
+                && stripos($message, 'relation "_sqlx_migrations" already exists') !== false
+            ) {
+                $message .= ' Try again with "Reset existing objects before import" enabled, or import into an empty database.';
+            }
+
+            $_SESSION['flash_error'] = 'Import failed: ' . $message;
         }
         $this->redirect("/databases/{$name}/import?server_id={$this->serverId}");
     }

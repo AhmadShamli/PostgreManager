@@ -21,6 +21,17 @@
                     <label class="custom-file-label" for="sql_file" style="background:#0f3460; border-color:#0f3460; color:#aaa;">Choose file...</label>
                 </div>
             </div>
+            <div class="form-group mb-4">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="reset_before_import" name="reset_before_import" value="1">
+                    <label class="custom-control-label" for="reset_before_import" style="color:#ddd;">
+                        Reset existing objects before import
+                    </label>
+                </div>
+                <small class="form-text" style="color:#aaa;">
+                    Recommended when importing a full schema dump. This removes existing user tables, views, functions, sequences, types, and non-system schemas first.
+                </small>
+            </div>
             <button type="submit" class="btn btn-warning mr-2" onclick="return confirm('Execute SQL against {{ db_name }}?')">
                 <i class="fas fa-upload mr-1"></i>Import
             </button>
