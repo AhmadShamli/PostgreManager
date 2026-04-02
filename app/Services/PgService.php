@@ -13,7 +13,10 @@ class PgService
     private ?PDO $conn = null;
     private array $activeProfile = [];
 
-    public function __construct(private ServerProfile $profileModel) {}
+    public function __construct(
+        private ServerProfile $profileModel,
+        private array $clientBinaries = []
+    ) {}
 
     /**
      * Connect to a PostgreSQL server using a stored profile.
@@ -514,7 +517,8 @@ class PgService
             throw new \RuntimeException('No active profile. Call connect() first.');
         }
 
-        $command = escapeshellcmd($binary);
+        $resolvedBinary = $this->resolveClientBinary($binary);
+        $command = escapeshellarg($resolvedBinary);
         foreach ($args as $arg) {
             $command .= ' ' . escapeshellarg((string) $arg);
         }
@@ -548,5 +552,74 @@ class PgService
             'stdout' => (string) $stdout,
             'stderr' => (string) $stderr,
         ];
+    }
+
+    private function resolveClientBinary(string $binary): string
+    {
+        $configured = trim((string) ($this->clientBinaries[$binary] ?? ''));
+        if ($configured !== '') {
+            if ($this->isExecutablePath($configured)) {
+                return $configured;
+            }
+
+            throw new \RuntimeException(sprintf(
+                '%s was configured as "%s" but that file was not found or is not executable.',
+                $binary,
+                $configured
+            ));
+        }
+
+        $found = $this->findExecutableInPath($binary);
+        if ($found !== null) {
+            return $found;
+        }
+
+        $envVar = $binary === 'pg_dump' ? 'PG_DUMP_BINARY' : 'PSQL_BINARY';
+
+        throw new \RuntimeException(sprintf(
+            '%s was not found on the server. Install PostgreSQL client tools or set %s in .env to the full executable path.',
+            $binary,
+            $envVar
+        ));
+    }
+
+    private function findExecutableInPath(string $binary): ?string
+    {
+        $path = getenv('PATH') ?: '';
+        if ($path === '') {
+            return null;
+        }
+
+        $extensions = [''];
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $pathext = getenv('PATHEXT') ?: '.EXE;.BAT;.CMD;.COM';
+            $extensions = array_values(array_unique(array_filter(array_map('trim', explode(';', $pathext)))));
+            array_unshift($extensions, '');
+        }
+
+        foreach (explode(PATH_SEPARATOR, $path) as $dir) {
+            $dir = trim($dir, " \t\n\r\0\x0B\"'");
+            if ($dir === '') {
+                continue;
+            }
+
+            foreach ($extensions as $extension) {
+                $candidate = $dir . DIRECTORY_SEPARATOR . $binary . $extension;
+                if ($this->isExecutablePath($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function isExecutablePath(string $path): bool
+    {
+        if (!is_file($path)) {
+            return false;
+        }
+
+        return DIRECTORY_SEPARATOR === '\\' || is_executable($path);
     }
 }

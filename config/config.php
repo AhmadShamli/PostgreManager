@@ -15,4 +15,10 @@ return [
     'twig' => [
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
+    'postgresql' => [
+        'client_binaries' => [
+            'pg_dump' => trim((string) ($_ENV['PG_DUMP_BINARY'] ?? '')),
+            'psql'    => trim((string) ($_ENV['PSQL_BINARY'] ?? '')),
+        ],
+    ],
 ];

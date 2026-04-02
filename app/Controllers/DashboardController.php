@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PostgreManager\Controllers;
 
+use Flight;
 use PostgreManager\Models\ServerProfile;
 use PostgreManager\Services\PgService;
 
@@ -26,7 +27,8 @@ class DashboardController extends PgBaseController
         if ($activeServerId) {
             try {
                 $_SESSION['active_server_id'] = $activeServerId;
-                $this->pg = new PgService($profileModel);
+                $config = Flight::get('config');
+                $this->pg = new PgService($profileModel, $config['postgresql']['client_binaries'] ?? []);
                 $this->pg->connect($activeServerId);
 
                 $stats = [

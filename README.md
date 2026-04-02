@@ -58,6 +58,21 @@ cp .env.example .env
 
 The SQLite database is auto-created at `storage/database.sqlite` on first boot. No manual schema migration is needed.
 
+For backup/import features, the host running PHP must also have PostgreSQL client tools available:
+
+```bash
+# optional: set explicit client paths if pg_dump / psql are not on PATH
+PG_DUMP_BINARY=
+PSQL_BINARY=
+```
+
+Windows example:
+
+```bash
+PG_DUMP_BINARY="C:\Program Files\PostgreSQL\17\bin\pg_dump.exe"
+PSQL_BINARY="C:\Program Files\PostgreSQL\17\bin\psql.exe"
+```
+
 ## Folder Structure
 
 ```text
@@ -103,3 +118,5 @@ docker-compose.yml <- single Apache + PHP container
 | `APP_ENV` | `production` | `development` or `production` |
 | `APP_DEBUG` | `false` | Enable Twig debug mode |
 | `APP_SECRET` | none | Required. Used for CSRF and encryption key |
+| `PG_DUMP_BINARY` | empty | Optional full path to `pg_dump` if it is not on the server PATH |
+| `PSQL_BINARY` | empty | Optional full path to `psql` if it is not on the server PATH |

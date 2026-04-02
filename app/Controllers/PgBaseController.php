@@ -43,7 +43,8 @@ abstract class PgBaseController extends BaseController
         $this->databaseLock  = new DatabaseLock($this->db());
         $profile             = $profileModel->find($serverId);
         $this->activeProfile = $profile ?? [];
-        $this->pg            = new PgService($profileModel);
+        $config              = Flight::get('config');
+        $this->pg            = new PgService($profileModel, $config['postgresql']['client_binaries'] ?? []);
         $this->pg->connect($serverId, $dbName);
     }
 

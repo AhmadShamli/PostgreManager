@@ -14,7 +14,7 @@ services:
       - mynetwork
     command: >
       sh -c "
-        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev unzip zip git -q &&
+        apt-get update -q && apt-get install -y libpq-dev libsqlite3-dev postgresql-client unzip zip git curl -q &&
         docker-php-ext-install pdo pdo_pgsql pdo_sqlite &&
         a2enmod rewrite &&
         sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf /etc/apache2/apache2.conf &&
