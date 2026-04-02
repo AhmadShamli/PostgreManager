@@ -186,10 +186,19 @@ class PgService
 
         try {
             $schemas = $this->conn->query(
-                "SELECT schema_name
-                 FROM information_schema.schemata
-                 WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'public')
-                 ORDER BY schema_name"
+                "SELECT s.schema_name
+                 FROM information_schema.schemata s
+                 WHERE s.schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'public')
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM pg_namespace n
+                     JOIN pg_depend d
+                       ON d.classid = 'pg_namespace'::regclass
+                      AND d.objid = n.oid
+                      AND d.deptype = 'e'
+                     WHERE n.nspname = s.schema_name
+                 )
+                 ORDER BY s.schema_name"
             )->fetchAll();
 
             foreach ($schemas as $schema) {
@@ -202,6 +211,13 @@ class PgService
                  JOIN pg_namespace n ON n.oid = c.relnamespace
                  WHERE n.nspname = 'public'
                  AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM pg_depend d
+                     WHERE d.classid = 'pg_class'::regclass
+                     AND d.objid = c.oid
+                     AND d.deptype = 'e'
+                 )
                  ORDER BY c.relname"
             )->fetchAll();
 
@@ -228,6 +244,13 @@ class PgService
                  FROM pg_proc p
                  JOIN pg_namespace n ON n.oid = p.pronamespace
                  WHERE n.nspname = 'public'
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM pg_depend d
+                     WHERE d.classid = 'pg_proc'::regclass
+                     AND d.objid = p.oid
+                     AND d.deptype = 'e'
+                 )
                  ORDER BY p.proname"
             )->fetchAll();
 
@@ -243,6 +266,13 @@ class PgService
                  JOIN pg_namespace n ON n.oid = t.typnamespace
                  WHERE n.nspname = 'public'
                  AND t.typtype IN ('d', 'e')
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM pg_depend d
+                     WHERE d.classid = 'pg_type'::regclass
+                     AND d.objid = t.oid
+                     AND d.deptype = 'e'
+                 )
                  ORDER BY t.typname"
             )->fetchAll();
 
